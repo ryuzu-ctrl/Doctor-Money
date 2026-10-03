@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -23,8 +23,19 @@ from bot.services.finance import empty_state, prepare_legacy_state
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Doctor Money API", version="1.0.0")
 DASHBOARD_FILE = Path(__file__).resolve().parents[1] / "dashboard" / "Doctor Money.html"
+LANDING_FILE = Path(__file__).resolve().parents[1] / "dashboard" / "landing.html"
 _rate_lock = threading.Lock()
 _rate_events: dict[str, list[float]] = {}
+
+
+def bot_telegram_link() -> str:
+    configured = os.getenv("TELEGRAM_BOT_LINK") or os.getenv("BOT_LINK")
+    if configured:
+        return configured
+
+    username = os.getenv("TELEGRAM_BOT_USERNAME") or os.getenv("BOT_USERNAME") or "DoctorMoneyBot"
+    username = username.lstrip("@")
+    return f"https://t.me/{username}"
 
 
 def check_rate_limit(key: str, limit: int = 120, window: int = 60) -> bool:
@@ -218,7 +229,15 @@ def create_pair_code(telegram_id: int, db: Session = Depends(get_db), authorizat
 
 
 @app.get("/")
-def dashboard() -> FileResponse:
+def landing_page() -> HTMLResponse:
+    template_path = LANDING_FILE if LANDING_FILE.exists() else DASHBOARD_FILE
+    content = template_path.read_text(encoding="utf-8")
+    content = content.replace("{{TELEGRAM_LINK}}", bot_telegram_link())
+    return HTMLResponse(content=content, media_type="text/html")
+
+
+@app.get("/dashboard")
+def dashboard_page() -> FileResponse:
     return FileResponse(DASHBOARD_FILE, media_type="text/html")
 
 

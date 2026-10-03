@@ -61,6 +61,16 @@ def test_import_preview_skips_seed_transactions_without_writing(client):
     assert client.get("/api/state", headers=headers).json()["state"]["txs"][0]["id"] == "u1"
 
 
+def test_root_and_dashboard_routes_are_available(client):
+    landing = client.get("/")
+    assert landing.status_code == 200
+    assert "t.me" in landing.text.lower() or "telegram" in landing.text.lower()
+
+    dashboard = client.get("/dashboard")
+    assert dashboard.status_code == 200
+    assert "Doctor Money" in dashboard.text
+
+
 def teardown_module():
     engine.dispose()
     try:

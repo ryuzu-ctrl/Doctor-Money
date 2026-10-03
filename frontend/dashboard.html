@@ -43,7 +43,7 @@ button{font-family:inherit}
 
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
 .wm{font:600 16px var(--display);letter-spacing:-.01em}.wm b{color:var(--accent);font-weight:600}
 .avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:linear-gradient(145deg,rgba(79,227,230,.35),rgba(124,92,255,.35));color:var(--fg);font:700 15px var(--display);cursor:pointer}
 .hello{margin:18px 0 10px;font:600 26px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
@@ -608,7 +608,7 @@ function chartHTML(sel){
 
 /* ---------- view pieces ---------- */
 function logo(){return '<svg viewBox="0 0 36 36" width="34" height="34" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.22)"/><path d="M15 8h6v7h7v6h-7v7h-6v-7H8v-6h7z" fill="url(#lg)"/><circle cx="18" cy="18" r="3.4" fill="#0B1634"/><path d="M18 16.3v3.4" stroke="url(#lg)" stroke-width="1.2" stroke-linecap="round"/></svg>';}
-function topbar(){return '<header class="top"><div class="brand">'+logo()+'<span class="wm">Doctor <b>Money</b></span></div><button type="button" class="avatar" data-act="name" aria-label="Ubah nama panggilan">'+esc((S.name||'S').charAt(0).toUpperCase())+'</button></header>';}
+function topbar(){return '<header class="top"><a class="brand" href="index.html" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a><button type="button" class="avatar" data-act="name" aria-label="Ubah nama panggilan">'+esc((S.name||'S').charAt(0).toUpperCase())+'</button></header>';}
 function monthSw(){
   var isC=S.ym===curYM(),minYM=shiftYM(curYM(),-12);
   return '<div class="month"><button type="button" data-act="mprev" aria-label="Bulan sebelumnya"'+(S.ym<=minYM?' disabled':'')+'>'+ic('left',18)+'</button><span>'+ymLabel(S.ym)+'</span><button type="button" data-act="mnext" aria-label="Bulan berikutnya"'+(isC?' disabled':'')+'>'+ic('right',18)+'</button></div>';
