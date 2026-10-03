@@ -1,2 +1,87 @@
 # Doctor-Money
-your doctor when u have money
+# Doctor Money
+
+Doctor Money menyediakan dashboard web dan bot Telegram di atas satu penyimpanan akun bersama. Dashboard lama menyimpan data di `localStorage`; saat dibuka lewat API, pengguna masuk ke alur pratinjau impor. Transaksi contoh `s...`, saldo/budget/tujuan bawaan yang belum diubah dilewati. Tidak ada seed data yang ditulis otomatis ke akun server.
+
+## Persiapan
+
+1. Buat bot melalui [@BotFather](https://t.me/BotFather), jalankan `/newbot`, lalu simpan token bot.
+2. Salin `.env.example` menjadi `.env`; isi `BOT_TOKEN`, `APP_SECRET` acak minimal 32 byte, `WEBAPP_URL` HTTPS publik, `DATABASE_URL`, `MODE`, dan `TZ`. Jangan commit `.env`.
+3. Atur `WEBAPP_URL` ke domain yang diarahkan ke API. Dashboard disajikan pada `/`; API berada di `/api`.
+4. Pasang Python 3.11 atau lebih baru, lalu pasang dependensi:
+
+	```bash
+	python -m venv .venv
+	. .venv/bin/activate
+	pip install -r requirements.txt
+	```
+
+## Menjalankan Lokal
+
+Set `MODE=polling`, lalu jalankan API dan bot pada dua terminal:
+
+```bash
+uvicorn backend.app:app --host 127.0.0.1 --port 8000
+python -m bot.main
+```
+
+Buka `http://127.0.0.1:8000/`. Tombol Telegram Mini App membutuhkan HTTPS publik, jadi untuk uji dari Telegram gunakan tunnel HTTPS tepercaya dan isi `WEBAPP_URL` dengan URL tunnel tersebut. Polling bot tidak membutuhkan webhook.
+
+Pada pengguna browser pertama, backend membuat akun kosong. Bila `localStorage` lama ditemukan, dashboard menampilkan jumlah transaksi/dompet yang akan dipindahkan dan jumlah item contoh yang dilewati. Pilih **Impor data saya** untuk menyimpan atau **Gunakan akun kosong** untuk menyimpan cadangan lokal dan mulai dengan akun server kosong. Data contoh dashboard tidak dipulihkan pada akun yang sudah tersinkron.
+
+## Menu dan Data
+
+Menu utama Telegram menyediakan Web App dan 22 tombol fitur. Command keuangan mencakup `/catat`, `/riwayat`, `/saldo`, `/wallet`, `/transfer`, `/budget`, `/laporan`, `/grafik`, `/pengingat`, `/simulasi`, `/zona`, `/hubungkan`, dan `/hapusdata`. Command pasar mencakup `/topcrypto`, `/crypto`, `/indeks`, `/saham`, `/kurs`, `/watchlist`, `/alert`, `/portofolio`, `/emas`, dan `/feargreed`. `/alert BTC > 70000` dapat langsung membuat alert. Pengaitan memakai kode satu kali yang kedaluwarsa dalam 10 menit. Bot yang belum terhubung memakai akun lokal yang terisolasi per `telegram_id`; saat ditautkan, bot dan dashboard membaca state yang sama.
+
+API menyimpan JSON state dashboard dengan revisi optimistis dalam SQLite. Bot dan API menggunakan transaksi repository yang sama. Untuk PostgreSQL, ganti `DATABASE_URL` dengan URL SQLAlchemy `postgresql+psycopg://...` dan tambahkan driver `psycopg` pada deployment.
+
+## Docker dan Produksi
+
+```bash
+docker compose up --build -d
+```
+
+Compose menjalankan API pada port 8000 dan bot pada polling dengan volume database persisten. Taruh reverse proxy HTTPS di depannya; jangan mengekspos database atau endpoint internal. Cadangkan volume `doctor-money-data` secara rutin. Untuk multi-instance/traffic tinggi, pindahkan SQLite ke PostgreSQL.
+
+### Deployment Supabase + Railway
+
+Untuk arsitektur produksi yang Anda pilih:
+
+- Database utama: Supabase Postgres.
+- Bot Telegram: Railway.
+- Dashboard web: tetap dapat di-hosting secara terpisah; frontend hanya berkomunikasi ke API/backend yang mengakses data yang sama.
+
+Langkahnya:
+
+1. Buat project Supabase baru dan salin connection string Postgres dari panel Database.
+2. Isi `DATABASE_URL` sesuai contoh di `.env.example` dengan URL Supabase Anda.
+3. Buat service baru di Railway dari repo ini.
+4. Set variabel lingkungan sesuai `.env.example`, lalu pilih start command:
+
+```bash
+python -m bot.main
+```
+
+5. Pastikan `MODE=webhook`, `WEBHOOK_URL` adalah URL publik Railway, dan `WEBAPP_URL` adalah URL publik aplikasi web Anda.
+6. Gunakan `APP_SECRET` yang kuat untuk webhook Telegram dan pairing code.
+
+Karena bot dan backend memakai database yang sama, semua akun Telegram, state, dan data keuangan dibagikan melalui satu sumber data. Tidak ada data terpisah untuk bot dan dashboard.
+
+Untuk webhook, set `MODE=webhook`, `WEBHOOK_URL=https://domain-publik`, dan `PORT=8080`. Arahkan reverse proxy hanya untuk path `/telegram/<hash>` ke layanan bot port 8080; rute `/` dan `/api/*` harus tetap menuju FastAPI. Webhook menggunakan secret token Telegram. Menu button Telegram didaftarkan ke `WEBAPP_URL` saat bot mulai.
+
+Mini App memuat `Telegram.WebApp`, memanggil `ready()`/`expand()`, dan meneruskan `initData` ke API. Backend memvalidasi tanda tangan HMAC-SHA256 menggunakan `BOT_TOKEN` dan menolak data kedaluwarsa sebelum mengaitkan akun. Jangan pernah menerima `telegram_id` dari body sebagai identitas.
+
+## Data Pasar dan Batas
+
+- Top/cek crypto, watchlist, alert, dan valuasi portofolio crypto menggunakan CoinGecko; tanpa API key, kuota endpoint publik berlaku. Atur `COINGECKO_API_KEY` bila memakai paket CoinGecko yang sesuai.
+- Kurs memakai Frankfurter dengan data referensi ECB. Fear & Greed memakai alternative.me. Pesan pasar menyertakan disclaimer non-saran investasi.
+- Data saham/indeks IDX belum diaktifkan dan harga emas belum diambil. Belum ada sumber gratis yang bisa saya nyatakan sekaligus andal, stabil, dan berlisensi; opsi saat ini Alpha Vantage (kuota gratis dan key), Twelve Data (kuota terbatas/berbayar), lisensi data resmi BEI, atau API harga emas berlisensi. Pilih penyedia sebelum fitur tersebut diaktifkan.
+- Webhook production memerlukan reverse proxy HTTPS yang merutekan path bot terpisah dari FastAPI. Belum ada frontend untuk pengelolaan command lanjutan/portofolio saham.
+
+## Tes
+
+```bash
+pytest -q
+```
+
+Tes mencakup parser nominal Bahasa Indonesia, pembentukan menu, validasi Mini App, laporan/skor, autentikasi API, impor tanpa seed, isolasi Telegram, revisi state, dan mutasi bot ke penyimpanan bersama.

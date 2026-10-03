@@ -290,10 +290,15 @@ select.field option{background:#0f1633;color:var(--fg)}
   <div class="toast" id="toast" role="status" hidden></div>
 </main>
 
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
 'use strict';
 var KEY='doctor-money:v1';
+  var SESSION_KEY='doctor-money:session:v1';
+var BASE_KEY='doctor-money:sync-base:v1';
+  var LEGACY_KEY='doctor-money:legacy-backup:v1';
+var OFFLINE_KEY='doctor-money:offline:v1';
 var MN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 var MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 var DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
@@ -463,13 +468,47 @@ function defaults(){
   };
 }
 function load(){try{var j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isArray(j.txs)&&j.wallets&&j.budgets&&j.goals)return j;}catch(e){}return null;}
-var S=Object.assign({},load()||defaults(),{tab:'home',ym:curYM(),sel:6,q:'',flt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null});
-function persist(){try{localStorage.setItem(KEY,JSON.stringify({txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name}));}catch(e){}}
+var legacyState=load();
+var S=Object.assign({},legacyState||defaults(),{tab:'home',ym:curYM(),sel:6,q:'',flt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null});
+var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,syncQueue=Promise.resolve(),syncErrorShown=false;
+function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
+function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
+function apiRequest(path,options){options=options||{};options.headers=Object.assign({'Content-Type':'application/json'},options.headers||{});if(apiToken)options.headers.Authorization='Bearer '+apiToken;return fetch(path,options).then(async function(response){var body={};try{body=await response.json();}catch(e){}if(!response.ok){var error=new Error(body.detail||'Layanan data belum tersedia');error.status=response.status;throw error;}return body;});}
+function mergeMap(base,local,remote){var result=Object.assign({},remote);Object.keys(base||{}).forEach(function(k){if(!Object.prototype.hasOwnProperty.call(local||{},k))delete result[k];});Object.keys(local||{}).forEach(function(k){if(JSON.stringify((base||{})[k])!==JSON.stringify(local[k]))result[k]=local[k];});return result;}
+function mergeList(base,local,remote,key){var b={},l={},r={};(base||[]).forEach(function(x){b[x[key]]=x;});(local||[]).forEach(function(x){l[x[key]]=x;});(remote||[]).forEach(function(x){r[x[key]]=x;});Object.keys(b).forEach(function(id){if(!Object.prototype.hasOwnProperty.call(l,id))delete r[id];});Object.keys(l).forEach(function(id){if(JSON.stringify(b[id])!==JSON.stringify(l[id]))r[id]=l[id];});return Object.keys(r).map(function(id){return r[id];});}
+function mergeState(base,local,remote){var merged=Object.assign({},remote);merged.txs=mergeList(base.txs,local.txs,remote.txs,'id');merged.wallets=mergeList(base.wallets,local.wallets,remote.wallets,'id');merged.goals=mergeList(base.goals,local.goals,remote.goals,'id');merged.budgets=mergeMap(base.budgets,local.budgets,remote.budgets);if(local.name!==base.name)merged.name=local.name;if(JSON.stringify(local.preferences)!==JSON.stringify(base.preferences))merged.preferences=local.preferences;return merged;}
+function saveSyncBase(state){lastSynced=JSON.parse(JSON.stringify(state));try{localStorage.setItem(BASE_KEY,JSON.stringify(lastSynced));}catch(e){}}
+async function writeState(state){var response=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:state,revision:serverRevision})});if(response.status===409){var remote=await apiRequest('/api/state');var merged=mergeState(lastSynced||remote.state,state,remote.state);serverRevision=remote.revision;response=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:merged,revision:serverRevision})});if(!response.ok)throw new Error('Perubahan dari perangkat lain belum tersinkron');var result=await response.json();serverRevision=result.revision;saveSyncBase(merged);if(JSON.stringify(merged)!==JSON.stringify(state)){adoptState(merged);render();}return;}if(!response.ok)throw new Error('Data belum tersinkron');var saved=await response.json();serverRevision=saved.revision;saveSyncBase(state);}
+function persist(){var snapshot=stateSnapshot();try{localStorage.setItem(KEY,JSON.stringify(snapshot));}catch(e){}if(apiReady){syncQueue=syncQueue.then(function(){return writeState(snapshot);}).catch(function(){if(!syncErrorShown){syncErrorShown=true;toast('Data tersimpan di perangkat, tetapi belum tersinkron ke server.');}});}}
+function migrationHTML(){if(!migration)return '';var state=migration.state||{},txs=(state.txs||[]).slice(0,5),items=txs.map(function(tx){return '<li class="tx"><div class="tx-m"><b>'+esc(tx.desc||'Transaksi')+'</b><span>'+esc(tx.date||'')+' · '+esc((CAT[tx.cat]||CAT.lain).n)+' · '+(tx.type==='in'?'+':'−')+rpw(tx.amt||0)+'</span></div></li>';}).join('');var wallets=(state.wallets||[]).map(function(w){return '<li>'+esc(w.n||'Dompet')+' · saldo awal '+rpw(w.start||0)+'</li>';}).join('');var budgets=Object.keys(state.budgets||{}).map(function(k){return '<li>'+esc((CAT[k]||CAT.lain).n)+' · '+rpw(state.budgets[k])+'</li>';}).join('');var goals=(state.goals||[]).map(function(g){return '<li>'+esc(g.n||'Tujuan')+' · '+rpw(g.s||0)+' dari '+rpw(g.t||0)+'</li>';}).join('');var title=migration.mode==='existing'?'Dua sumber data ditemukan':'Data lama ditemukan';var intro=migration.mode==='existing'?'Akun server sudah berisi data. Impor otomatis dihentikan agar tidak menimpa atau mencampur saldo secara ambigu. Data browser ditampilkan di bawah.':'Tinjau data browser sebelum impor. Nilai bawaan/contoh akan dilewati.';var buttons=migration.mode==='existing'?'<button type="button" class="btn primary" data-act="useServerState">Gunakan akun server</button><button type="button" class="btn" data-act="useLocalState">Tetap gunakan data browser</button>':'<button type="button" class="btn primary" data-act="importLegacy">Impor data saya</button><button type="button" class="btn" data-act="discardLegacy">Gunakan akun kosong</button>';return '<section class="panel glass" aria-label="Impor data lama"><div class="panel-h"><h2>'+title+'</h2><span class="aside">Tinjau sebelum lanjut</span></div><p class="aside">'+intro+'<br>'+migration.imported_transactions+' transaksi, '+migration.wallets+' dompet, '+migration.budgets+' budget, dan '+migration.goals+' tujuan ditemukan; '+migration.skipped_sample_items+' nilai bawaan/contoh akan dilewati.</p>'+(items?'<ul class="txs">'+items+'</ul>':'<p class="aside">Tidak ada transaksi personal yang terdeteksi.</p>')+(wallets?'<div class="aside">Dompet:<ul>'+wallets+'</ul></div>':'')+(budgets?'<div class="aside">Budget:<ul>'+budgets+'</ul></div>':'')+(goals?'<div class="aside">Tujuan:<ul>'+goals+'</ul></div>':'')+'<div class="g-act">'+buttons+'</div></section>';}
+async function boot(){
+  if(offlineMode){apiReady=false;render(false);return;}
+  var webApp=window.Telegram&&window.Telegram.WebApp;
+  if(webApp){webApp.ready();webApp.expand();var theme=webApp.themeParams||{};if(theme.bg_color)document.documentElement.style.setProperty('--tg-theme-bg',theme.bg_color);if(theme.text_color)document.documentElement.style.setProperty('--tg-theme-text',theme.text_color);}
+  try{
+    var remote;
+    async function createAccount(){var created=await fetch('/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:webApp&&webApp.initData?webApp.initData:null})});var account=await created.json();if(!created.ok)throw new Error(account.detail||'Akun tidak dapat dibuat');apiToken=account.token;localStorage.setItem(SESSION_KEY,apiToken);return {state:account.state,revision:account.revision};}
+    if(!apiToken)remote=await createAccount();
+    else{try{remote=await apiRequest('/api/state');}catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);legacyState=load();remote=await createAccount();}}
+    var base=null;try{base=JSON.parse(localStorage.getItem(BASE_KEY));}catch(e){}
+    if(legacyState&&remote.revision===0&&!remote.state.txs.length)migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});
+    else if(legacyState&&!base&&remote.revision>0&&JSON.stringify(legacyState)!==JSON.stringify(remote.state)){migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});migration.mode='existing';}
+    var local=legacyState;
+    var recovered=base&&local&&JSON.stringify(local)!==JSON.stringify(base)?mergeState(base,local,remote.state):remote.state;
+    serverRevision=remote.revision;saveSyncBase(remote.state);adoptState(recovered);apiReady=true;
+    try{linkedTelegram=(await apiRequest('/api/link/status')).connected;}catch(e){}
+    if(migration){render(false);return;}
+    if(JSON.stringify(recovered)!==JSON.stringify(remote.state)){await writeState(recovered);}
+    try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}
+    render(false);
+    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.edit||S.editName)return;try{var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
+  }catch(e){apiReady=false;render(false);toast('Server belum tersedia. Data lokal tetap bisa digunakan.');}
+}
 
 /* ---------- calculations ---------- */
 function inM(ym){return S.txs.filter(function(t){return t.date.slice(0,7)===ym;});}
 function isExp(t){return t.type==='out'&&!t.sv;}
-function sumIn(l){return l.filter(function(t){return t.type==='in';}).reduce(function(a,t){return a+t.amt;},0);}
+function sumIn(l){return l.filter(function(t){return t.type==='in'&&!t.sv;}).reduce(function(a,t){return a+t.amt;},0);}
 function sumOut(l){return l.filter(isExp).reduce(function(a,t){return a+t.amt;},0);}
 function bal(w){return w.start+S.txs.filter(function(t){return t.w===w.id;}).reduce(function(a,t){return a+(t.type==='in'?t.amt:-t.amt);},0);}
 function stats(ym){
@@ -693,7 +732,9 @@ var VIEWS={
   return topbar()+'<div><h1 class="ttl">Dompet</h1></div>'+
   '<section class="panel glass" aria-label="Total saldo"><span class="eyebrow">Total semua dompet</span><div class="big-num">'+(sumAll<0?'−':'')+rp(sumAll)+'</div><div class="alloc" aria-hidden="true">'+S.wallets.map(function(w){var b=Math.max(0,bal(w));return b>0?'<i style="flex:'+b+';background:'+w.c+'"></i>':'';}).join('')+'</div></section>'+
   '<section class="panel glass" aria-labelledby="h-w"><div class="panel-h"><h2 id="h-w">Daftar Dompet</h2><span class="aside">Ketuk untuk ubah saldo awal</span></div>'+cards+'</section>'+
-  '<section class="panel glass danger-zone" aria-labelledby="h-d"><div class="panel-h"><h2 id="h-d">Data</h2><span class="aside">Tersimpan di browser ini</span></div>'+
+  '<section class="panel glass" aria-labelledby="h-link"><div class="panel-h"><h2 id="h-link">Hubungkan Telegram</h2><span class="aside">'+(offlineMode?'Mode lokal':linkedTelegram?'Terhubung':'Belum terhubung')+'</span></div>'+
+   (offlineMode?'<p class="aside">Perubahan hanya tersimpan di browser ini dan tidak disinkronkan ke bot.</p><button type="button" class="btn primary" data-act="reconnect">Sambungkan ke akun server</button>':linkedTelegram?'<button type="button" class="btn" data-act="unlinkTelegram">Putuskan akun</button>':'<form class="row2" data-form="telegram-link"><div><label class="lbl" for="linkCode">Kode dari bot (8 angka)</label><input class="field" id="linkCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div><button type="submit" class="btn primary">Hubungkan</button></form>')+'</section>'+
+  '<section class="panel glass danger-zone" aria-labelledby="h-d"><div class="panel-h"><h2 id="h-d">Data</h2><span class="aside">Tersimpan di server</span></div>'+
    '<button type="button" class="btn'+(S.armed==='sample'?' warnb':'')+'" data-act="rsample">'+(S.armed==='sample'?'Yakin? Ketuk lagi untuk memulihkan':'Pulihkan data contoh')+'</button>'+
    '<button type="button" class="btn'+(S.armed==='empty'?' warnb':'')+'" data-act="rempty">'+(S.armed==='empty'?'Yakin? Ketuk lagi untuk mengosongkan':'Mulai dari nol (kosongkan semua)')+'</button></section>';
  }
@@ -709,6 +750,7 @@ function initNav(){
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
   $('#view').innerHTML=VIEWS[S.tab]();
+  if(migration)$('#view').insertAdjacentHTML('afterbegin',migrationHTML());
   $$('.nav [data-act="tab"]').forEach(function(b){if(b.dataset.arg===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   sc.scrollTop=y;
   var f=null;
@@ -788,6 +830,12 @@ var ACT={
  mnext:function(){if(S.ym<curYM()){S.ym=shiftYM(S.ym,1);S.edit=null;render();}},
  add:openSheet,close:closeSheet,
  hide:function(){S.hide=!S.hide;render();},
+ importLegacy:async function(){if(!migration)return;try{var result=await apiRequest('/api/import/confirm',{method:'POST',body:JSON.stringify({state:migration.state})});adoptState(migration.state);serverRevision=result.revision;lastSynced=JSON.parse(JSON.stringify(migration.state));migration=null;try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Data lama berhasil dipindahkan.');}catch(e){toast(e.message);}},
+ discardLegacy:function(){if(!migration)return;try{localStorage.setItem(LEGACY_KEY,JSON.stringify(legacyState));}catch(e){}migration=null;adoptState(lastSynced);try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Akun baru siap. Cadangan data lama tetap di browser.');},
+ useServerState:function(){if(!migration)return;try{localStorage.setItem(LEGACY_KEY,JSON.stringify(legacyState));}catch(e){}migration=null;adoptState(lastSynced);try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Data server digunakan. Data browser lama tersimpan sebagai cadangan lokal.');},
+ useLocalState:function(){if(legacyState)adoptState(legacyState);migration=null;apiReady=false;offlineMode=true;localStorage.setItem(OFFLINE_KEY,'1');try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Data browser dipertahankan. Perubahan ini belum tersinkron ke server.');},
+ reconnect:function(){offlineMode=false;localStorage.removeItem(OFFLINE_KEY);legacyState=stateSnapshot();boot();},
+ unlinkTelegram:async function(){try{await apiRequest('/api/link',{method:'DELETE'});linkedTelegram=false;render();toast('Akun Telegram diputuskan.');}catch(e){toast(e.message);}},
  name:function(){S.tab='home';S.editName=true;render(false);},
  flt:function(g){S.flt=g;render();},
  edit:function(g){S.edit=S.edit===g?null:g;render();},
@@ -814,6 +862,7 @@ var ACT={
  pickcat:function(g){if(!S.sheet)return;S.sheet.cat=g;S.sheet.catManual=true;updateSheet();},
  ex:function(g){$('#qtext').value=g;S.sheet.typeManual=false;S.sheet.catManual=false;updateSheet();$('#qtext').focus();},
  rsample:function(){
+  if(apiReady){toast('Data contoh tidak tersedia pada akun tersinkron.');return;}
   if(S.armed!=='sample'){S.armed='sample';render();setTimeout(function(){if(S.armed==='sample'){S.armed=null;if(S.tab==='wal')render();}},4000);return;}
   var d=defaults();d.name=S.name;Object.assign(S,d,{armed:null,edit:null});persist();render();toast('Data contoh dipulihkan');
  },
@@ -825,11 +874,14 @@ var ACT={
 };
 document.addEventListener('click',function(e){
   var el=e.target.closest('[data-act]');if(!el)return;
+  if(migration&&el.dataset.act!=='importLegacy'&&el.dataset.act!=='discardLegacy'&&el.dataset.act!=='useServerState'&&el.dataset.act!=='useLocalState'){toast('Pilih dahulu sumber data yang akan digunakan.');return;}
   var f=ACT[el.dataset.act];if(f)f(el.dataset.arg,el,e);
 });
 document.addEventListener('submit',function(e){
   e.preventDefault();var f=e.target;
+  if(migration){toast('Pilih dahulu sumber data yang akan digunakan.');return;}
   if(f.id==='addForm'){saveSheet();return;}
+  if(f.dataset.form==='telegram-link'){apiRequest('/api/link',{method:'POST',body:JSON.stringify({code:$('#linkCode').value.trim()})}).then(function(){linkedTelegram=true;render();toast('Akun Telegram berhasil dihubungkan.');}).catch(function(error){toast(error.message);});return;}
   if(f.dataset.form){
     var p=parseAmount($('#edit-in').value);
     if(!p||p.val<0){toast('Isi angka yang valid, misalnya 1.800.000 atau 1,8jt');return;}
@@ -864,7 +916,8 @@ document.addEventListener('pointermove',pickDay);
 document.addEventListener('pointerdown',pickDay);
 
 initNav();
-render(false);
+$('#view').innerHTML='<div class="empty">Menghubungkan ke penyimpanan Doctor Money…</div>';
+boot();
 })();
 </script>
 

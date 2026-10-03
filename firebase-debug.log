@@ -1,0 +1,129 @@
+[debug] [2026-10-03T09:14:05.213Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T09:14:05.216Z] Command:       /usr/local/share/nvm/versions/node/v24.21.0/bin/node /home/codespace/nvm/current/bin/firebase deploy --debug
+[debug] [2026-10-03T09:14:05.216Z] CLI Version:   15.32.1
+[debug] [2026-10-03T09:14:05.216Z] Platform:      linux
+[debug] [2026-10-03T09:14:05.216Z] Node Version:  v24.21.0
+[debug] [2026-10-03T09:14:05.217Z] Detected Agent: github_copilot_vscode_agent
+[debug] [2026-10-03T09:14:05.217Z] Time:          Sat Oct 03 2026 09:14:05 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-10-03T09:14:05.217Z] ----------------------------------------------------------------------
+[debug] 
+[error] 
+[error] Error: Not in a Firebase app directory (could not locate firebase.json)
+[debug] [2026-10-03T09:15:36.899Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T09:15:36.901Z] Command:       /usr/local/share/nvm/versions/node/v24.21.0/bin/node /home/codespace/nvm/current/bin/firebase deploy --debug
+[debug] [2026-10-03T09:15:36.902Z] CLI Version:   15.32.1
+[debug] [2026-10-03T09:15:36.902Z] Platform:      linux
+[debug] [2026-10-03T09:15:36.902Z] Node Version:  v24.21.0
+[debug] [2026-10-03T09:15:36.902Z] Detected Agent: github_copilot_vscode_agent
+[debug] [2026-10-03T09:15:36.903Z] Time:          Sat Oct 03 2026 09:15:36 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-10-03T09:15:36.903Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-03T09:15:38.333Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-03T09:15:38.334Z] > authorizing via signed-in user (kapalryuzu@gmail.com)
+[debug] [2026-10-03T09:15:38.334Z] [iam] checking project doctor-moneys for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-10-03T09:15:38.359Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:38.359Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:38.361Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/doctor-moneys:testIamPermissions [none]
+[debug] [2026-10-03T09:15:38.361Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/doctor-moneys:testIamPermissions  x-goog-user-project=doctor-moneys
+[debug] [2026-10-03T09:15:38.361Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/doctor-moneys:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-03T09:15:39.774Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/doctor-moneys:testIamPermissions 200
+[debug] [2026-10-03T09:15:39.774Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/doctor-moneys:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-03T09:15:39.775Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:39.775Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:39.776Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/doctor-moneys [none]
+[debug] [2026-10-03T09:15:40.432Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/doctor-moneys 200
+[debug] [2026-10-03T09:15:40.433Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/doctor-moneys {"projectId":"doctor-moneys","projectNumber":"83387393481","displayName":"Doctor-Moneys","name":"projects/doctor-moneys","resources":{"hostingSite":"doctor-moneys"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_b99fe501-1699-4177-8fc8-b20d34d7899b"}
+[info] 
+[info] === Deploying to 'doctor-moneys'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-10-03T09:15:40.436Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:40.436Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:40.436Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/doctor-moneys/sites/doctor-moneys [none]
+[debug] [2026-10-03T09:15:41.717Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/doctor-moneys/sites/doctor-moneys 200
+[debug] [2026-10-03T09:15:41.718Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/doctor-moneys/sites/doctor-moneys {"name":"projects/doctor-moneys/sites/doctor-moneys","defaultUrl":"https://doctor-moneys.web.app","appId":"1:83387393481:web:4b8724aef2fb491778f418","type":"DEFAULT_SITE"}
+[debug] [2026-10-03T09:15:41.720Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:41.720Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:41.721Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions [none]
+[debug] [2026-10-03T09:15:41.721Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-10-03T09:15:43.495Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions 200
+[debug] [2026-10-03T09:15:43.495Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions {"name":"projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[doctor-moneys]: beginning deploy... 
+[info] i  hosting[doctor-moneys]: found 2 files in dashboard 
+[debug] [2026-10-03T09:15:43.512Z] [hosting] uploading with 200 concurrency
+[debug] [2026-10-03T09:15:43.513Z] [hosting] hash cache [ZGFzaGJvYXJk] not populated
+[debug] [2026-10-03T09:15:43.522Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:43.522Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:43.523Z] [hosting] hash cache [ZGFzaGJvYXJk] stored for 2 files
+[debug] [2026-10-03T09:15:43.523Z] [hosting][hash queue][FINAL] {"max":8,"min":6,"avg":7,"active":0,"complete":2,"success":2,"errored":0,"retried":0,"total":2,"elapsed":10}
+[debug] [2026-10-03T09:15:43.523Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64:populateFiles [none]
+[debug] [2026-10-03T09:15:43.524Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64:populateFiles {"files":{"/index.html":"7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf","/Doctor Money.html":"50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1"}}
+[debug] [2026-10-03T09:15:44.389Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64:populateFiles 200
+[debug] [2026-10-03T09:15:44.390Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64:populateFiles {"uploadRequiredHashes":["7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf","50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files"}
+[debug] [2026-10-03T09:15:44.390Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:44.390Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:44.391Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:44.391Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:44.391Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf [none]
+[debug] [2026-10-03T09:15:44.391Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf [stream]
+[debug] [2026-10-03T09:15:44.392Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1 [none]
+[debug] [2026-10-03T09:15:44.392Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1 [stream]
+[debug] [2026-10-03T09:15:44.395Z] [hosting][populate queue][FINAL] {"max":869,"min":869,"avg":869,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":873}
+[debug] [2026-10-03T09:15:44.395Z] [hosting] uploads queued: 2
+[info] i  hosting: uploading new files [0/2] (0%) 
+[debug] [2026-10-03T09:15:46.000Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf 200
+[debug] [2026-10-03T09:15:46.001Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/7fdccd6f9863376342d6aa16c55f145c18cd847a226337ef3fdc95b02d0d8ecf [stream]
+[debug] [2026-10-03T09:15:46.035Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1 200
+[debug] [2026-10-03T09:15:46.035Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/doctor-moneys/versions/7067b1b0f0e92e64/files/50dd5aa818c589c17a4835364d920d12a1c378de3f8e4389ed4e2373072473e1 [stream]
+[debug] [2026-10-03T09:15:46.035Z] [hosting][upload queue][FINAL] {"max":1644,"min":1611,"avg":1627.5,"active":0,"complete":2,"success":2,"errored":0,"retried":0,"total":2,"elapsed":1645}
+[info] i  hosting: upload complete 
+[info] ✔  hosting[doctor-moneys]: file upload complete 
+[debug] [2026-10-03T09:15:46.036Z] [hosting] deploy completed after 2538ms
+[debug] [2026-10-03T09:15:46.037Z] [
+  {
+    "config": {
+      "public": "dashboard",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ],
+      "site": "doctor-moneys"
+    },
+    "version": "projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64"
+  }
+]
+[info] i  hosting[doctor-moneys]: finalizing version... 
+[debug] [2026-10-03T09:15:46.038Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:46.039Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:46.039Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions/7067b1b0f0e92e64 updateMask=status%2Cconfig
+[debug] [2026-10-03T09:15:46.039Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions/7067b1b0f0e92e64 {"status":"FINALIZED","config":{"headers":[{"glob":"**/*.html","headers":{"Cache-Control":"no-cache"}}]}}
+[debug] [2026-10-03T09:15:46.729Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions/7067b1b0f0e92e64 200
+[debug] [2026-10-03T09:15:46.729Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/versions/7067b1b0f0e92e64 {"name":"projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"no-cache"},"glob":"**/*.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-10-03T09:15:42.140567Z","createUser":{"email":"kapalryuzu@gmail.com"},"finalizeTime":"2026-10-03T09:15:46.560363Z","finalizeUser":{"email":"kapalryuzu@gmail.com"}}
+[debug] [2026-10-03T09:15:46.730Z] [hosting] finalized version for doctor-moneys:[object Object]
+[info] ✔  hosting[doctor-moneys]: version finalized 
+[info] i  hosting[doctor-moneys]: releasing new version... 
+[debug] [2026-10-03T09:15:46.730Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:46.730Z] Checked if tokens are valid: true, expires at: 1791021373229
+[debug] [2026-10-03T09:15:46.730Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/channels/live/releases versionName=projects%2F83387393481%2Fsites%2Fdoctor-moneys%2Fversions%2F7067b1b0f0e92e64
+[debug] [2026-10-03T09:15:46.731Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/channels/live/releases {}
+[debug] [2026-10-03T09:15:47.515Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/channels/live/releases 200
+[debug] [2026-10-03T09:15:47.515Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/doctor-moneys/channels/live/releases {"name":"projects/83387393481/sites/doctor-moneys/channels/live/releases/1791018946617000","version":{"name":"projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"no-cache"},"glob":"**/*.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-10-03T09:15:42.140567Z","createUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"},"finalizeTime":"2026-10-03T09:15:46.560363Z","finalizeUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"}},"type":"DEPLOY","releaseTime":"2026-10-03T09:15:46.617Z","releaseUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"}}
+[debug] [2026-10-03T09:15:47.515Z] [hosting] release: {"name":"projects/83387393481/sites/doctor-moneys/channels/live/releases/1791018946617000","version":{"name":"projects/83387393481/sites/doctor-moneys/versions/7067b1b0f0e92e64","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"no-cache"},"glob":"**/*.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-10-03T09:15:42.140567Z","createUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"},"finalizeTime":"2026-10-03T09:15:46.560363Z","finalizeUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"}},"type":"DEPLOY","releaseTime":"2026-10-03T09:15:46.617Z","releaseUser":{"email":"kapalryuzu@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIX4MdB-CqbK2oRObmsu4YIAnDU_Da2ig6G41iOk2q-yRwttUs"}}
+[info] ✔  hosting[doctor-moneys]: release complete 
+[info] 
+[info] ✔  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/doctor-moneys/overview
+[info] Hosting URL: https://doctor-moneys.web.app
