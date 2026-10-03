@@ -29,6 +29,14 @@ Buka `http://127.0.0.1:8000/`. Tombol Telegram Mini App membutuhkan HTTPS publik
 
 Pada pengguna browser pertama, backend membuat akun kosong. Bila `localStorage` lama ditemukan, dashboard menampilkan jumlah transaksi/dompet yang akan dipindahkan dan jumlah item contoh yang dilewati. Pilih **Impor data saya** untuk menyimpan atau **Gunakan akun kosong** untuk menyimpan cadangan lokal dan mulai dengan akun server kosong. Data contoh dashboard tidak dipulihkan pada akun yang sudah tersinkron.
 
+## Doctor Money Pro
+
+Akun baru mendapat uji coba Pro selama 7 hari sejak status Pro pertama kali diperiksa. Semua fitur dashboard memerlukan masa trial atau langganan aktif; API juga menolak akses data setelah masa tersebut berakhir. Paket saat ini Rp20.000 untuk 1 bulan, Rp100.000 untuk 6 bulan, dan Rp180.000 untuk 1 tahun. Paket 6 bulan menghemat Rp20.000 dan paket tahunan menghemat Rp60.000 dibanding harga bulanan.
+
+Pembayaran saat ini diverifikasi manual. Isi `PRO_PAYMENT_METHOD`, `PRO_PAYMENT_ACCOUNT`, dan `PRO_PAYMENT_ACCOUNT_NAME` untuk menampilkan instruksi transfer. Tetapkan `PRO_ADMIN_SECRET` dengan nilai rahasia yang kuat dan berbeda dari `APP_SECRET`. Order tertunda dapat dilihat melalui `GET /api/admin/pro/orders`; setelah pembayaran diverifikasi, aktifkan lewat `POST /api/admin/pro/orders/{order_id}/activate` dengan header `Authorization: Bearer $PRO_ADMIN_SECRET`. Jangan kirim secret admin ke browser atau commit `.env`.
+
+Data entitlement dan order disimpan pada tabel `pro_access` dan `pro_orders`, yang dibuat otomatis saat API mulai. Row Level Security diaktifkan pada kedua tabel saat menggunakan PostgreSQL/Supabase; akses aplikasi tetap lewat backend.
+
 ## Menu dan Data
 
 Menu utama Telegram menyediakan Web App dan 22 tombol fitur. Command keuangan mencakup `/catat`, `/riwayat`, `/saldo`, `/wallet`, `/transfer`, `/budget`, `/laporan`, `/grafik`, `/pengingat`, `/simulasi`, `/zona`, `/hubungkan`, dan `/hapusdata`. Command pasar mencakup `/topcrypto`, `/crypto`, `/indeks`, `/saham`, `/kurs`, `/watchlist`, `/alert`, `/portofolio`, `/emas`, dan `/feargreed`. `/alert BTC > 70000` dapat langsung membuat alert. Pengaitan memakai kode satu kali yang kedaluwarsa dalam 10 menit. Bot yang belum terhubung memakai akun lokal yang terisolasi per `telegram_id`; saat ditautkan, bot dan dashboard membaca state yang sama.

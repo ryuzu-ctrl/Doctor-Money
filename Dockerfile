@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend ./backend
 COPY bot ./bot
-COPY dashboard ./dashboard
+COPY frontend ./frontend
 
 EXPOSE 8000
 CMD ["python", "-m", "bot.main"]

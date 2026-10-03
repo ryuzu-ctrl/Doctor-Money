@@ -1,29 +1,39 @@
+import calendar
+import hmac
 import json
 import os
 import re
+import secrets
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
-from .models import Account
-from .repository import account_for_token, issue_token, make_pair_code, new_account, put_state, state_of, use_pair_code
+from .models import Account, ProAccess, ProOrder
+from .repository import account_for_token, issue_token, make_pair_code, new_account, now_utc, put_state, state_of, use_pair_code
 from .security import InitDataError, validate_init_data
 from bot.services.finance import empty_state, prepare_legacy_state
 
 
 Base.metadata.create_all(bind=engine)
+if engine.dialect.name == "postgresql":
+    with engine.begin() as connection:
+        connection.exec_driver_sql('ALTER TABLE "pro_access" ENABLE ROW LEVEL SECURITY')
+        connection.exec_driver_sql('ALTER TABLE "pro_orders" ENABLE ROW LEVEL SECURITY')
 app = FastAPI(title="Doctor Money API", version="1.0.0")
-DASHBOARD_FILE = Path(__file__).resolve().parents[1] / "dashboard" / "Doctor Money.html"
-LANDING_FILE = Path(__file__).resolve().parents[1] / "dashboard" / "landing.html"
+FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
+DASHBOARD_FILE = FRONTEND_DIR / "dashboard.html"
+LANDING_FILE = FRONTEND_DIR / "index.html"
 _rate_lock = threading.Lock()
 _rate_events: dict[str, list[float]] = {}
 
@@ -87,6 +97,97 @@ class PairRequest(BaseModel):
     code: str = Field(min_length=8, max_length=8, pattern=r"^\d{8}$")
 
 
+class ProOrderRequest(BaseModel):
+    plan_id: Literal["monthly", "six_months", "annual"]
+
+
+PRO_PLANS = {
+    "monthly": {"name": "1 bulan", "months": 1, "price": 20_000, "monthly_price": 20_000, "savings": 0},
+    "six_months": {"name": "6 bulan", "months": 6, "price": 100_000, "monthly_price": 16_667, "savings": 20_000},
+    "annual": {"name": "1 tahun", "months": 12, "price": 180_000, "monthly_price": 15_000, "savings": 60_000},
+}
+
+
+def ensure_pro_access(db: Session, account: Account) -> ProAccess:
+    access = db.get(ProAccess, account.id)
+    if access is None:
+        now = now_utc()
+        access = ProAccess(account_id=account.id, status="trial", trial_started_at=now, trial_ends_at=now + timedelta(days=7), updated_at=now)
+        db.add(access)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            access = db.get(ProAccess, account.id)
+            if access is None:
+                raise
+        else:
+            db.refresh(access)
+    now = now_utc()
+    ends_at = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
+    if ends_at is not None and ends_at <= now:
+        access.status = "expired"
+        access.updated_at = now
+        db.commit()
+    return access
+
+
+def pro_access_active(access: ProAccess) -> bool:
+    now = now_utc()
+    ends_at = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
+    return ends_at is not None and ends_at > now
+
+
+def pro_payment_config() -> dict[str, Any]:
+    method = os.getenv("PRO_PAYMENT_METHOD", "").strip()
+    account = os.getenv("PRO_PAYMENT_ACCOUNT", "").strip()
+    account_name = os.getenv("PRO_PAYMENT_ACCOUNT_NAME", "").strip()
+    return {"configured": bool(method and account and account_name), "method": method, "account": account, "account_name": account_name}
+
+
+def iso_utc(value: datetime | None) -> str | None:
+    return value.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z") if value else None
+
+
+def plan_payload(plan_id: str) -> dict[str, Any]:
+    return {"id": plan_id, **PRO_PLANS[plan_id]}
+
+
+def order_payload(order: ProOrder) -> dict[str, Any]:
+    return {
+        "order_id": order.id,
+        "plan": plan_payload(order.plan_id),
+        "amount": order.amount,
+        "status": order.status,
+        "created_at": iso_utc(order.created_at),
+        "payment": pro_payment_config(),
+        "support_url": os.getenv("SUPPORT_URL") or bot_telegram_link(),
+    }
+
+
+def require_pro(account: Account = Depends(current_account), db: Session = Depends(get_db)) -> Account:
+    access = ensure_pro_access(db, account)
+    if not pro_access_active(access):
+        raise HTTPException(status_code=402, detail="Masa Pro Anda telah berakhir. Pilih paket untuk mengaktifkan kembali fitur dashboard.")
+    return account
+
+
+def require_pro_admin(authorization: str | None) -> None:
+    expected = os.getenv("PRO_ADMIN_SECRET", "")
+    scheme, _, secret = (authorization or "").partition(" ")
+    if not expected:
+        raise HTTPException(status_code=503, detail="PRO_ADMIN_SECRET belum dikonfigurasi")
+    if scheme.lower() != "bearer" or not hmac.compare_digest(secret, expected):
+        raise HTTPException(status_code=401, detail="Tidak diizinkan")
+
+
+def add_months(value: datetime, months: int) -> datetime:
+    month_index = value.year * 12 + value.month - 1 + months
+    year, month_zero = divmod(month_index, 12)
+    month = month_zero + 1
+    return value.replace(year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1]))
+
+
 def validate_state(state: dict[str, Any]) -> None:
     if len(json.dumps(state, ensure_ascii=False)) > 2_000_000:
         raise HTTPException(status_code=413, detail="Data terlalu besar")
@@ -129,6 +230,72 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/pro/status")
+def pro_status(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
+    access = ensure_pro_access(db, account)
+    pending = db.scalar(select(ProOrder).where(ProOrder.account_id == account.id, ProOrder.status == "pending").order_by(ProOrder.created_at.desc()))
+    return {
+        "status": access.status,
+        "active": pro_access_active(access),
+        "plan": plan_payload(access.plan_id) if access.plan_id in PRO_PLANS else None,
+        "trial_started_at": iso_utc(access.trial_started_at),
+        "trial_ends_at": iso_utc(access.trial_ends_at),
+        "starts_at": iso_utc(access.starts_at),
+        "expires_at": iso_utc(access.expires_at),
+        "plans": [plan_payload(plan_id) for plan_id in PRO_PLANS],
+        "payment": pro_payment_config(),
+        "pending_order": order_payload(pending) if pending else None,
+        "support_url": os.getenv("SUPPORT_URL") or bot_telegram_link(),
+    }
+
+
+@app.post("/api/pro/orders")
+def create_pro_order(payload: ProOrderRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
+    pending = db.scalar(select(ProOrder).where(ProOrder.account_id == account.id, ProOrder.plan_id == payload.plan_id, ProOrder.status == "pending").order_by(ProOrder.created_at.desc()))
+    if pending:
+        return order_payload(pending)
+    plan = PRO_PLANS[payload.plan_id]
+    order = ProOrder(id=secrets.token_hex(12).upper(), account_id=account.id, plan_id=payload.plan_id, amount=plan["price"], status="pending", created_at=now_utc())
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order_payload(order)
+
+
+@app.get("/api/admin/pro/orders")
+def pending_pro_orders(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    orders = db.scalars(select(ProOrder).where(ProOrder.status == "pending").order_by(ProOrder.created_at)).all()
+    return {"orders": [{"order_id": order.id, "account_id": order.account_id, "plan": plan_payload(order.plan_id), "amount": order.amount, "created_at": iso_utc(order.created_at)} for order in orders]}
+
+
+@app.post("/api/admin/pro/orders/{order_id}/activate")
+def activate_pro_order(order_id: str, authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    order = db.get(ProOrder, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order tidak ditemukan")
+    if order.status == "paid":
+        access = db.get(ProAccess, order.account_id)
+        return {"status": "paid", "expires_at": iso_utc(access.expires_at if access else None)}
+    if order.status != "pending":
+        raise HTTPException(status_code=409, detail="Order tidak dapat diaktifkan")
+
+    access = ensure_pro_access(db, db.get(Account, order.account_id))
+    now = now_utc()
+    current_end = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
+    starts_at = current_end if current_end and current_end > now else now
+    access.status = "active"
+    access.plan_id = order.plan_id
+    access.starts_at = starts_at
+    access.expires_at = add_months(starts_at, PRO_PLANS[order.plan_id]["months"])
+    access.updated_at = now
+    order.status = "paid"
+    order.paid_at = now
+    db.commit()
+    return {"status": order.status, "order_id": order.id, "account_id": order.account_id, "plan": plan_payload(order.plan_id), "expires_at": iso_utc(access.expires_at)}
+
+
 @app.middleware("http")
 async def limit_account_creation(request: Request, call_next):
     if request.url.path == "/api/accounts":
@@ -160,12 +327,12 @@ def create_browser_account(payload: AccountRequest, db: Session = Depends(get_db
 
 
 @app.get("/api/state")
-def get_state(account: Account = Depends(current_account)) -> dict[str, Any]:
+def get_state(account: Account = Depends(require_pro)) -> dict[str, Any]:
     return {"state": state_of(account), "revision": account.revision}
 
 
 @app.put("/api/state")
-def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, int]:
+def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, int]:
     validate_state(payload.state)
     try:
         revision = put_state(db, account, payload.state, payload.revision)
@@ -177,13 +344,13 @@ def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Ac
 
 
 @app.post("/api/import/preview")
-def import_preview(legacy: dict[str, Any], account: Account = Depends(current_account)) -> dict[str, Any]:
+def import_preview(legacy: dict[str, Any], account: Account = Depends(require_pro)) -> dict[str, Any]:
     prepared, skipped = prepare_legacy_state(legacy)
     return {"state": prepared, "account_revision": account.revision, "imported_transactions": len(prepared["txs"]), "skipped_sample_items": skipped, "wallets": len(prepared["wallets"]), "budgets": len(prepared["budgets"]), "goals": len(prepared["goals"])}
 
 
 @app.post("/api/import/confirm")
-def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, int]:
+def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, int]:
     state, _ = prepare_legacy_state(payload.state)
     validate_state(state)
     if account.revision or state_of(account).get("txs"):
@@ -192,7 +359,7 @@ def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), accoun
 
 
 @app.post("/api/link")
-def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
+def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
     try:
         use_pair_code(db, account, payload.code)
     except ValueError as exc:
@@ -201,12 +368,12 @@ def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: 
 
 
 @app.get("/api/link/status")
-def link_status(account: Account = Depends(current_account)) -> dict[str, Any]:
+def link_status(account: Account = Depends(require_pro)) -> dict[str, Any]:
     return {"connected": account.dashboard_linked, "telegram_id": account.telegram_id if account.dashboard_linked else None}
 
 
 @app.delete("/api/link")
-def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
+def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
     telegram_id = account.telegram_id
     account.dashboard_linked = False
     account.telegram_id = None
@@ -230,8 +397,7 @@ def create_pair_code(telegram_id: int, db: Session = Depends(get_db), authorizat
 
 @app.get("/")
 def landing_page() -> HTMLResponse:
-    template_path = LANDING_FILE if LANDING_FILE.exists() else DASHBOARD_FILE
-    content = template_path.read_text(encoding="utf-8")
+    content = LANDING_FILE.read_text(encoding="utf-8")
     content = content.replace("{{TELEGRAM_LINK}}", bot_telegram_link())
     return HTMLResponse(content=content, media_type="text/html")
 

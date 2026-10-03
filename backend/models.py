@@ -36,3 +36,29 @@ class PairCode(Base):
     telegram_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class ProAccess(Base):
+    __tablename__ = "pro_access"
+
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    trial_started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    trial_ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    plan_id: Mapped[str | None] = mapped_column(String(24))
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class ProOrder(Base):
+    __tablename__ = "pro_orders"
+    __table_args__ = (UniqueConstraint("id"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), index=True)
+    plan_id: Mapped[str] = mapped_column(String(24), nullable=False)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime)

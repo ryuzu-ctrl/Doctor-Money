@@ -35,6 +35,21 @@ button{font-family:inherit}
 .glass{background:linear-gradient(160deg,rgba(255,255,255,.105),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:24px;-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 12px 32px rgba(0,0,12,.28)}
 .sub{background:linear-gradient(160deg,rgba(255,255,255,.085),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .panel{padding:16px;display:flex;flex-direction:column;gap:12px}
+.pro-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid rgba(79,227,230,.3);border-radius:16px;background:rgba(79,227,230,.09);color:var(--fg);font-size:12.5px}
+.pro-banner b{display:block;color:var(--accent);font:600 13px var(--display)}
+.pro-banner button{border:0;background:none;color:var(--accent);font:600 12px var(--body);cursor:pointer;white-space:nowrap}
+.pro-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.pro-plan{padding:15px;display:flex;flex-direction:column;gap:8px;border-color:var(--line)}
+.pro-plan.selected,.pro-plan.featured{border-color:rgba(79,227,230,.55);background:linear-gradient(145deg,rgba(79,227,230,.13),rgba(255,255,255,.035))}
+.pro-plan h2{margin:0;font:600 16px var(--display)}
+.pro-plan .pro-price{font:700 24px/1.15 var(--display);font-variant-numeric:tabular-nums}
+.pro-plan .pro-monthly,.pro-plan .pro-save{font-size:12px;color:var(--muted)}
+.pro-plan .pro-save{color:var(--good)}
+.pro-plan .btn{margin-top:4px}
+.pro-order{padding:15px;display:flex;flex-direction:column;gap:10px;overflow-wrap:anywhere}
+.pro-order h2{margin:0;font:600 16px var(--display)}
+.pro-order b{color:var(--fg)}
+.pro-note{font-size:12.5px;color:var(--muted)}
 .panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .panel-h h2{margin:0;font:600 17px/1.2 var(--body)}
 .aside{font-size:12.5px;color:var(--muted)}
@@ -187,6 +202,27 @@ button{font-family:inherit}
 .foot{font-size:12px;color:var(--faint);text-align:center;padding:4px 12px}
 .danger-zone{display:flex;flex-direction:column;gap:8px}
 
+/* assets: crypto, saham, lainnya */
+.hrow .m b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-val{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;text-align:right}
+.h-val b{font:700 14px var(--display);font-variant-numeric:tabular-nums}
+.pl{font:600 12px var(--body);font-variant-numeric:tabular-nums;color:var(--muted)}
+.pl.up{color:var(--good)}.pl.dn{color:var(--bad)}
+.rank{width:22px;text-align:center;color:var(--faint);font:600 12.5px var(--display);flex:none}
+.legs{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legs span{display:inline-flex;align-items:center;gap:6px}
+.legs i{width:8px;height:8px;border-radius:50%}
+.nw{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-top:10px;border-top:1px solid var(--line-soft);font-size:13px;color:var(--muted)}
+.nw b{font:700 14.5px var(--display);color:var(--fg);font-variant-numeric:tabular-nums}
+.aedit{flex-wrap:wrap}
+.aedit>div{flex:1 1 40%}
+.aedit .btn{flex:1}
+.btn.dangerb{color:var(--bad);border-color:rgba(255,122,138,.4)}
+.del.addb:hover{color:var(--accent);background:rgba(79,227,230,.12)}
+.kseg{display:grid;grid-template-columns:repeat(3,1fr);padding:4px;border-radius:14px;background:rgba(255,255,255,.06);gap:4px}
+.kseg button{height:38px;border:0;border-radius:11px;background:none;color:var(--muted);font:600 13.5px var(--body);cursor:pointer}
+.kseg button[aria-pressed="true"]{background:rgba(79,227,230,.16);color:var(--accent)}
+
 /* buttons, fields */
 .btn{height:46px;padding:0 20px;border-radius:15px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--fg);font:600 14.5px var(--body);cursor:pointer}
 .btn.primary{background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);border-color:transparent;box-shadow:0 8px 22px rgba(79,227,230,.28)}
@@ -199,8 +235,8 @@ button{font-family:inherit}
 select.field option{background:#0f1633;color:var(--fg)}
 
 /* nav */
-.nav{position:absolute;z-index:20;left:14px;right:14px;bottom:14px;height:70px;border-radius:32px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:0 6px;background:linear-gradient(160deg,rgba(44,66,110,.6),rgba(18,26,58,.78))}
-.nav button{background:none;border:0;color:var(--faint);font:500 11px var(--body);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;cursor:pointer;min-width:0}
+.nav{position:absolute;z-index:20;left:14px;right:14px;bottom:14px;height:70px;border-radius:32px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;padding:0 6px;background:linear-gradient(160deg,rgba(44,66,110,.6),rgba(18,26,58,.78))}
+.nav button{background:none;border:0;color:var(--faint);font:500 10.5px var(--body);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;cursor:pointer;min-width:0}
 .nav button[aria-current="page"]{color:var(--accent)}
 .nav button[aria-current="page"] .ic{filter:drop-shadow(0 0 8px rgba(79,227,230,.7))}
 .nav .fab{width:56px;height:56px;border-radius:50%;margin:-28px auto 0;padding:0;justify-content:center;background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);box-shadow:0 10px 26px rgba(79,227,230,.4),inset 0 1px 0 rgba(255,255,255,.55)}
@@ -249,6 +285,7 @@ select.field option{background:#0f1633;color:var(--fg)}
     <button type="button" data-act="tab" data-arg="tx"></button>
     <button type="button" class="fab" data-act="add" aria-label="Tambah transaksi" id="fab"></button>
     <button type="button" data-act="tab" data-arg="bud"></button>
+    <button type="button" data-act="tab" data-arg="aset"></button>
     <button type="button" data-act="tab" data-arg="wal"></button>
   </nav>
 
@@ -283,6 +320,37 @@ select.field option{background:#0f1633;color:var(--fg)}
       <div class="actions">
         <button type="button" class="btn" data-act="close">Batal</button>
         <button type="submit" class="btn primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sheet-wrap" id="asheet" hidden>
+    <div class="backdrop" data-act="aclose"></div>
+    <form class="sheet" id="assetForm" autocomplete="off" aria-labelledby="asheet-title">
+      <div class="grab"></div>
+      <div class="sheet-head">
+        <div><span class="eyebrow">Aset &amp; investasi</span><h2 id="asheet-title">Catat aset</h2></div>
+        <button type="button" class="x" data-act="aclose" aria-label="Tutup" id="axbtn"></button>
+      </div>
+      <div class="kseg" role="group" aria-label="Jenis aset">
+        <button type="button" data-act="akind" data-arg="crypto" aria-pressed="true">Crypto</button>
+        <button type="button" data-act="akind" data-arg="stock" aria-pressed="false">Saham</button>
+        <button type="button" data-act="akind" data-arg="other" aria-pressed="false">Lainnya</button>
+      </div>
+      <div>
+        <label class="lbl" for="acode" id="acodeL">Simbol koin</label>
+        <input class="field big" id="acode" type="text" maxlength="40" placeholder="BTC" aria-describedby="apreview">
+      </div>
+      <div class="chips" id="aquick" aria-label="Contoh"></div>
+      <div class="row2">
+        <div><label class="lbl" for="aqty" id="aqtyL">Jumlah koin</label><input class="field" id="aqty" type="text" inputmode="decimal"></div>
+        <div><label class="lbl" for="abuy" id="abuyL">Harga beli / koin (Rp)</label><input class="field" id="abuy" type="text" inputmode="decimal"></div>
+      </div>
+      <div id="anowBox"><label class="lbl" for="anow" id="anowL">Harga terkini (Rp)</label><input class="field" id="anow" type="text" inputmode="decimal" placeholder="Kosongkan bila sama dengan harga beli"></div>
+      <div class="preview" id="apreview" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="btn" data-act="aclose">Batal</button>
+        <button type="submit" class="btn primary" id="asave">Simpan</button>
       </div>
     </form>
   </div>
@@ -335,7 +403,9 @@ var ICONS={
  wifi:'<path d="M3 9a14 14 0 0 1 18 0M6 12.5a9.5 9.5 0 0 1 12 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r=".8"/>',
  gauge:'<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/>',
  coin:'<circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.2c-.5-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.8 0 2.6 5 1.2 5 3.8 0 1.1-1.1 1.9-2.5 1.9-1.1 0-2-.5-2.6-1.3M12 6.5V8M12 16v1.5"/>',
- wallet2:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><path d="M7 15h3"/>'
+ wallet2:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><path d="M7 15h3"/>',
+ layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+ chart:'<path d="M3 20h18"/><path d="M7 16v-5M12 16V6M17 16v-8"/>'
 };
 function ic(n,s){s=s||20;return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[n]+'</svg>';}
 
@@ -469,40 +539,50 @@ function defaults(){
 }
 function load(){try{var j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isArray(j.txs)&&j.wallets&&j.budgets&&j.goals)return j;}catch(e){}return null;}
 var legacyState=load();
-var S=Object.assign({},legacyState||defaults(),{tab:'home',ym:curYM(),sel:6,q:'',flt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null});
-var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,syncQueue=Promise.resolve(),syncErrorShown=false;
+var requestedPlan=new URLSearchParams(window.location.search).get('plan');
+if(!['monthly','six_months','annual'].includes(requestedPlan))requestedPlan='';
+var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null});
+var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false;
 function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
 function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
 function apiRequest(path,options){options=options||{};options.headers=Object.assign({'Content-Type':'application/json'},options.headers||{});if(apiToken)options.headers.Authorization='Bearer '+apiToken;return fetch(path,options).then(async function(response){var body={};try{body=await response.json();}catch(e){}if(!response.ok){var error=new Error(body.detail||'Layanan data belum tersedia');error.status=response.status;throw error;}return body;});}
 function mergeMap(base,local,remote){var result=Object.assign({},remote);Object.keys(base||{}).forEach(function(k){if(!Object.prototype.hasOwnProperty.call(local||{},k))delete result[k];});Object.keys(local||{}).forEach(function(k){if(JSON.stringify((base||{})[k])!==JSON.stringify(local[k]))result[k]=local[k];});return result;}
 function mergeList(base,local,remote,key){var b={},l={},r={};(base||[]).forEach(function(x){b[x[key]]=x;});(local||[]).forEach(function(x){l[x[key]]=x;});(remote||[]).forEach(function(x){r[x[key]]=x;});Object.keys(b).forEach(function(id){if(!Object.prototype.hasOwnProperty.call(l,id))delete r[id];});Object.keys(l).forEach(function(id){if(JSON.stringify(b[id])!==JSON.stringify(l[id]))r[id]=l[id];});return Object.keys(r).map(function(id){return r[id];});}
-function mergeState(base,local,remote){var merged=Object.assign({},remote);merged.txs=mergeList(base.txs,local.txs,remote.txs,'id');merged.wallets=mergeList(base.wallets,local.wallets,remote.wallets,'id');merged.goals=mergeList(base.goals,local.goals,remote.goals,'id');merged.budgets=mergeMap(base.budgets,local.budgets,remote.budgets);if(local.name!==base.name)merged.name=local.name;if(JSON.stringify(local.preferences)!==JSON.stringify(base.preferences))merged.preferences=local.preferences;return merged;}
+function mergeState(base,local,remote){var merged=Object.assign({},remote);merged.txs=mergeList(base.txs,local.txs,remote.txs,'id');merged.wallets=mergeList(base.wallets,local.wallets,remote.wallets,'id');merged.goals=mergeList(base.goals,local.goals,remote.goals,'id');merged.portfolio=mergeList(base.portfolio,local.portfolio,remote.portfolio,'id');merged.budgets=mergeMap(base.budgets,local.budgets,remote.budgets);if(local.name!==base.name)merged.name=local.name;if(JSON.stringify(local.preferences)!==JSON.stringify(base.preferences))merged.preferences=local.preferences;return merged;}
 function saveSyncBase(state){lastSynced=JSON.parse(JSON.stringify(state));try{localStorage.setItem(BASE_KEY,JSON.stringify(lastSynced));}catch(e){}}
 async function writeState(state){var response=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:state,revision:serverRevision})});if(response.status===409){var remote=await apiRequest('/api/state');var merged=mergeState(lastSynced||remote.state,state,remote.state);serverRevision=remote.revision;response=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:merged,revision:serverRevision})});if(!response.ok)throw new Error('Perubahan dari perangkat lain belum tersinkron');var result=await response.json();serverRevision=result.revision;saveSyncBase(merged);if(JSON.stringify(merged)!==JSON.stringify(state)){adoptState(merged);render();}return;}if(!response.ok)throw new Error('Data belum tersinkron');var saved=await response.json();serverRevision=saved.revision;saveSyncBase(state);}
 function persist(){var snapshot=stateSnapshot();try{localStorage.setItem(KEY,JSON.stringify(snapshot));}catch(e){}if(apiReady){syncQueue=syncQueue.then(function(){return writeState(snapshot);}).catch(function(){if(!syncErrorShown){syncErrorShown=true;toast('Data tersimpan di perangkat, tetapi belum tersinkron ke server.');}});}}
 function migrationHTML(){if(!migration)return '';var state=migration.state||{},txs=(state.txs||[]).slice(0,5),items=txs.map(function(tx){return '<li class="tx"><div class="tx-m"><b>'+esc(tx.desc||'Transaksi')+'</b><span>'+esc(tx.date||'')+' · '+esc((CAT[tx.cat]||CAT.lain).n)+' · '+(tx.type==='in'?'+':'−')+rpw(tx.amt||0)+'</span></div></li>';}).join('');var wallets=(state.wallets||[]).map(function(w){return '<li>'+esc(w.n||'Dompet')+' · saldo awal '+rpw(w.start||0)+'</li>';}).join('');var budgets=Object.keys(state.budgets||{}).map(function(k){return '<li>'+esc((CAT[k]||CAT.lain).n)+' · '+rpw(state.budgets[k])+'</li>';}).join('');var goals=(state.goals||[]).map(function(g){return '<li>'+esc(g.n||'Tujuan')+' · '+rpw(g.s||0)+' dari '+rpw(g.t||0)+'</li>';}).join('');var title=migration.mode==='existing'?'Dua sumber data ditemukan':'Data lama ditemukan';var intro=migration.mode==='existing'?'Akun server sudah berisi data. Impor otomatis dihentikan agar tidak menimpa atau mencampur saldo secara ambigu. Data browser ditampilkan di bawah.':'Tinjau data browser sebelum impor. Nilai bawaan/contoh akan dilewati.';var buttons=migration.mode==='existing'?'<button type="button" class="btn primary" data-act="useServerState">Gunakan akun server</button><button type="button" class="btn" data-act="useLocalState">Tetap gunakan data browser</button>':'<button type="button" class="btn primary" data-act="importLegacy">Impor data saya</button><button type="button" class="btn" data-act="discardLegacy">Gunakan akun kosong</button>';return '<section class="panel glass" aria-label="Impor data lama"><div class="panel-h"><h2>'+title+'</h2><span class="aside">Tinjau sebelum lanjut</span></div><p class="aside">'+intro+'<br>'+migration.imported_transactions+' transaksi, '+migration.wallets+' dompet, '+migration.budgets+' budget, dan '+migration.goals+' tujuan ditemukan; '+migration.skipped_sample_items+' nilai bawaan/contoh akan dilewati.</p>'+(items?'<ul class="txs">'+items+'</ul>':'<p class="aside">Tidak ada transaksi personal yang terdeteksi.</p>')+(wallets?'<div class="aside">Dompet:<ul>'+wallets+'</ul></div>':'')+(budgets?'<div class="aside">Budget:<ul>'+budgets+'</ul></div>':'')+(goals?'<div class="aside">Tujuan:<ul>'+goals+'</ul></div>':'')+'<div class="g-act">'+buttons+'</div></section>';}
 async function boot(){
-  if(offlineMode){apiReady=false;render(false);return;}
   var webApp=window.Telegram&&window.Telegram.WebApp;
   if(webApp){webApp.ready();webApp.expand();var theme=webApp.themeParams||{};if(theme.bg_color)document.documentElement.style.setProperty('--tg-theme-bg',theme.bg_color);if(theme.text_color)document.documentElement.style.setProperty('--tg-theme-text',theme.text_color);}
   try{
     var remote;
     async function createAccount(){var created=await fetch('/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:webApp&&webApp.initData?webApp.initData:null})});var account=await created.json();if(!created.ok)throw new Error(account.detail||'Akun tidak dapat dibuat');apiToken=account.token;localStorage.setItem(SESSION_KEY,apiToken);return {state:account.state,revision:account.revision};}
     if(!apiToken)remote=await createAccount();
-    else{try{remote=await apiRequest('/api/state');}catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);legacyState=load();remote=await createAccount();}}
+    try{proStatus=await apiRequest('/api/pro/status');}
+    catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);legacyState=load();remote=await createAccount();proStatus=await apiRequest('/api/pro/status');}
+    proUnavailable=false;
+    if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}
+    if(offlineMode){apiReady=false;render(false);return;}
+    if(!remote)remote=await apiRequest('/api/state');
     var base=null;try{base=JSON.parse(localStorage.getItem(BASE_KEY));}catch(e){}
-    if(legacyState&&remote.revision===0&&!remote.state.txs.length)migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});
+    if(legacyState&&remote.revision===0&&!remote.state.txs.length&&(!base||JSON.stringify(legacyState)!==JSON.stringify(base)))migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});
     else if(legacyState&&!base&&remote.revision>0&&JSON.stringify(legacyState)!==JSON.stringify(remote.state)){migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});migration.mode='existing';}
     var local=legacyState;
     var recovered=base&&local&&JSON.stringify(local)!==JSON.stringify(base)?mergeState(base,local,remote.state):remote.state;
     serverRevision=remote.revision;saveSyncBase(remote.state);adoptState(recovered);apiReady=true;
     try{linkedTelegram=(await apiRequest('/api/link/status')).connected;}catch(e){}
-    if(migration){render(false);return;}
+    if(migration){closeSheet();closeAsset();render(false);return;}
     if(JSON.stringify(recovered)!==JSON.stringify(remote.state)){await writeState(recovered);}
     try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}
     render(false);
-    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.edit||S.editName)return;try{var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
-  }catch(e){apiReady=false;render(false);toast('Server belum tersedia. Data lokal tetap bisa digunakan.');}
+    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.edit||S.editName)return;try{proStatus=await apiRequest('/api/pro/status');if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
+  }catch(e){
+    apiReady=false;
+    if(e.status===402){try{proStatus=await apiRequest('/api/pro/status');}catch(error){proStatus=null;}proStatus=proStatus||{status:'expired',active:false,plans:[],payment:{configured:false}};S.tab='pro';render(false);return;}
+    proUnavailable=true;proStatus={status:'unavailable',active:false,plans:[],payment:{configured:false}};render(false);toast('Status Pro belum dapat diverifikasi. Coba sambungkan kembali.');
+  }
 }
 
 /* ---------- calculations ---------- */
@@ -556,6 +636,85 @@ function bills(){
 }
 function wname(id){var w=S.wallets.filter(function(x){return x.id===id;})[0];return w?w.n:'Dompet';}
 
+/* ---------- assets: crypto, saham, lainnya ---------- */
+/* Crypto dihargai otomatis lewat CoinGecko. Saham dan aset lain memakai harga terkini yang diisi manual. Saham disimpan dalam lembar (1 lot = 100 lembar). */
+var MARKET_KEY='doctor-money:market:v1';
+var CG='https://api.coingecko.com/api/v3';
+var KIND={crypto:{n:'Crypto',c:'#FFC857',i:'coin'},stock:{n:'Saham',c:'#6CB6FF',i:'chart'},other:{n:'Lainnya',c:'#C79BFF',i:'layers'}};
+var AK={
+ crypto:{code:'Simbol koin',ph:'BTC',qty:'Jumlah koin',qph:'0,02',buy:'Harga beli / koin (Rp)',quick:['BTC','ETH','SOL','BNB','XRP']},
+ stock:{code:'Kode saham',ph:'BBCA',qty:'Jumlah lot',qph:'5',buy:'Harga beli / lembar (Rp)',now:'Harga terkini per lembar (Rp)',quick:['BBCA','BBRI','TLKM','BMRI','ASII']},
+ other:{code:'Nama aset',ph:'Emas Antam',qty:'Jumlah unit',qph:'10',buy:'Harga beli / unit (Rp)',now:'Harga terkini per unit (Rp)',quick:['Emas','Reksa dana','Obligasi','Properti']}
+};
+var M={top:[],prices:{},ids:{},at:0,next:0,loading:false,err:false};
+try{var mc=JSON.parse(localStorage.getItem(MARKET_KEY));if(mc&&mc.prices){M.top=mc.top||[];M.prices=mc.prices;M.ids=mc.ids||{};M.at=mc.at||0;}}catch(e){}
+function parseNum(t){
+  t=String(t).trim().replace(/\s/g,'').replace(/^rp\.?/i,'');
+  if(!/^\d[\d.,]*$/.test(t))return null;
+  var d=t.lastIndexOf('.'),c=t.lastIndexOf(',');
+  if(d>-1&&c>-1)t=c>d?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');
+  else if(c>-1)t=t.match(/,/g).length>1?t.replace(/,/g,''):t.replace(',','.');
+  else if(d>-1&&/^[1-9]\d{0,2}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');
+  var n=parseFloat(t);return isFinite(n)?n:null;
+}
+function parsePrice(t){t=String(t).trim();if(/(juta|jt|ribu|rb|k)$/i.test(t)){var p=parseAmount(t);return p?p.val:null;}return parseNum(t);}
+function qf(n){return n.toLocaleString('id-ID',{maximumFractionDigits:8});}
+function nin(n){return n.toLocaleString('id-ID',{maximumFractionDigits:8,useGrouping:false});}
+function rpx(n){n=Math.abs(n);return n>=100?rp(n):'Rp '+n.toLocaleString('id-ID',{maximumFractionDigits:n<1?6:2});}
+function pct(n){return (n<0?'−':'+')+Math.abs(n).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';}
+function tlabel(ts){var d=new Date(ts);return (ymd(d)===ymd(new Date())?'':dayLabel(ymd(d))+', ')+p2(d.getHours())+'.'+p2(d.getMinutes());}
+function hKind(h){return KIND[h.kind]?h.kind:'crypto';}
+function coinId(h){return h.asset_id||M.ids[String(h.code).toLowerCase()]||null;}
+function hCalc(h){
+  var k=hKind(h),q=+h.quantity||0,buy=+h.purchase_price||0,price=null,cost=q*buy,ch=null;
+  if(k==='crypto'){
+    var c=M.prices[coinId(h)];
+    if(c&&c.idr){price=c.idr;ch=c.ch;if(h.currency==='USD')cost=c.usd?cost*c.idr/c.usd:null;}
+    else if(h.currency==='USD')cost=null;
+  }else price=h.price!=null?+h.price:buy;
+  var value=price==null?null:q*price;
+  return {k:k,q:q,price:price,value:value,cost:cost,pl:value!=null&&cost!=null?value-cost:null,ch:ch};
+}
+function assetStats(){
+  var out={value:0,cost:0,pl:0,by:{crypto:0,stock:0,other:0},n:(S.portfolio||[]).length,unknown:0};
+  (S.portfolio||[]).forEach(function(h){
+    var c=hCalc(h);
+    if(c.value==null){out.unknown++;return;}
+    out.value+=c.value;out.by[c.k]+=c.value;
+    if(c.pl!=null){out.cost+=c.cost;out.pl+=c.pl;}
+  });
+  return out;
+}
+function cg(path){return fetch(CG+path,{headers:{Accept:'application/json'}}).then(function(r){if(!r.ok)throw new Error('market');return r.json();});}
+async function findCoin(q){
+  var r=await cg('/search?query='+encodeURIComponent(q)),cs=r.coins||[],s=String(q).toLowerCase();
+  var c=cs.filter(function(x){return String(x.symbol).toLowerCase()===s;})[0]||cs[0];
+  return c?{id:c.id,sym:String(c.symbol).toUpperCase(),name:c.name}:null;
+}
+async function loadMarket(force){
+  if(M.loading||(!force&&Date.now()<M.next))return;
+  M.loading=true;
+  try{
+    var top=await cg('/coins/markets?vs_currency=idr&order=market_cap_desc&per_page=10&page=1&price_change_percentage=24h');
+    M.top=top.map(function(c){return {id:c.id,sym:String(c.symbol).toUpperCase(),name:c.name,idr:c.current_price,ch:c.price_change_percentage_24h};});
+    M.top.forEach(function(c){M.prices[c.id]=Object.assign(M.prices[c.id]||{},{idr:c.idr,ch:c.ch});var k=c.sym.toLowerCase();if(!M.ids[k])M.ids[k]=c.id;});
+    var held=(S.portfolio||[]).filter(function(h){return hKind(h)==='crypto';}),look=0,ids=[];
+    for(var i=0;i<held.length;i++){
+      var key=String(held[i].code).toLowerCase();
+      if(!held[i].asset_id&&!M.ids[key]&&look<3){look++;try{var found=await findCoin(held[i].code);if(found)M.ids[key]=found.id;}catch(e){}}
+    }
+    held.forEach(function(h){var id=coinId(h);if(id&&ids.indexOf(id)<0)ids.push(id);});
+    if(ids.length){
+      var pr=await cg('/simple/price?ids='+encodeURIComponent(ids.join(','))+'&vs_currencies=idr,usd&include_24hr_change=true');
+      Object.keys(pr).forEach(function(id){M.prices[id]={idr:pr[id].idr,usd:pr[id].usd,ch:pr[id].idr_24h_change};});
+    }
+    M.at=Date.now();M.err=false;
+    try{localStorage.setItem(MARKET_KEY,JSON.stringify({top:M.top,prices:M.prices,ids:M.ids,at:M.at}));}catch(e){}
+  }catch(e){M.err=true;}
+  M.loading=false;M.next=Date.now()+60000;
+  if((S.tab==='aset'||S.tab==='home')&&!S.edit&&!S.editName)render();
+}
+
 /* ---------- small drawing helpers ---------- */
 function smooth(pts,minY,maxY){
   if(pts.length<2)return '';
@@ -608,7 +767,13 @@ function chartHTML(sel){
 
 /* ---------- view pieces ---------- */
 function logo(){return '<svg viewBox="0 0 36 36" width="34" height="34" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.22)"/><path d="M15 8h6v7h7v6h-7v7h-6v-7H8v-6h7z" fill="url(#lg)"/><circle cx="18" cy="18" r="3.4" fill="#0B1634"/><path d="M18 16.3v3.4" stroke="url(#lg)" stroke-width="1.2" stroke-linecap="round"/></svg>';}
-function topbar(){return '<header class="top"><a class="brand" href="index.html" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a><button type="button" class="avatar" data-act="name" aria-label="Ubah nama panggilan">'+esc((S.name||'S').charAt(0).toUpperCase())+'</button></header>';}
+function proDate(value){return value?new Date(value).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';}
+function proBanner(){
+  if(!proStatus||!proStatus.active||S.tab==='pro')return '';
+  var trial=proStatus.status==='trial',end=trial?proStatus.trial_ends_at:proStatus.expires_at;
+  return '<section class="pro-banner"><div><b>'+ (trial?'Uji coba Pro':'Doctor Money Pro')+'</b>'+(trial?'berakhir ':'aktif sampai ')+proDate(end)+'</div><button type="button" data-act="proplans">Lihat paket</button></section>';
+}
+function topbar(){return '<header class="top"><a class="brand" href="/" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a><button type="button" class="avatar" data-act="name" aria-label="Ubah nama panggilan">'+esc((S.name||'S').charAt(0).toUpperCase())+'</button></header>'+proBanner();}
 function monthSw(){
   var isC=S.ym===curYM(),minYM=shiftYM(curYM(),-12);
   return '<div class="month"><button type="button" data-act="mprev" aria-label="Bulan sebelumnya"'+(S.ym<=minYM?' disabled':'')+'>'+ic('left',18)+'</button><span>'+ymLabel(S.ym)+'</span><button type="button" data-act="mnext" aria-label="Bulan berikutnya"'+(isC?' disabled':'')+'>'+ic('right',18)+'</button></div>';
@@ -656,7 +821,50 @@ function txListHTML(){
   return html+'</ul>';
 }
 
+function assetSum(a){
+  var wal=S.wallets.reduce(function(s,w){return s+bal(w);},0),net=wal+a.value;
+  var legs=Object.keys(KIND).filter(function(k){return a.by[k]>0;});
+  return '<span class="eyebrow">Total nilai aset</span><div class="big-num">'+(S.hide?'••••••••':rp(a.value))+'</div>'+
+   (a.cost>0?'<span class="delta'+(a.pl<0?' neg':'')+'" style="margin-top:0;align-self:flex-start">'+(a.pl<0?'−':'+')+rpw(a.pl)+' · '+pct(a.pl/a.cost*100)+' dari modal</span>':'')+
+   (legs.length?'<div class="alloc" aria-hidden="true">'+legs.map(function(k){return '<i style="flex:'+a.by[k]+';background:'+KIND[k].c+'"></i>';}).join('')+'</div><div class="legs">'+legs.map(function(k){return '<span><i style="background:'+KIND[k].c+'"></i>'+KIND[k].n+' '+Math.round(a.by[k]/a.value*100)+'%</span>';}).join('')+'</div>':'')+
+   (a.unknown?'<span class="aside">'+a.unknown+' aset belum punya harga terkini dan belum dihitung.</span>':'')+
+   '<div class="nw"><span>Kekayaan bersih (dompet + aset)</span><b>'+(S.hide?'••••••••':(net<0?'−':'')+rp(net))+'</b></div>';
+}
+function assetCard(){
+  var a=assetStats();
+  return '<section class="panel glass" aria-labelledby="h-as"><div class="panel-h"><h2 id="h-as">Aset &amp; Investasi</h2><button type="button" class="linkbtn" data-act="tab" data-arg="aset">'+(a.n?'Kelola':'Mulai catat')+'</button></div>'+
+   (a.n?assetSum(a):'<div class="empty" style="padding:8px"><b>Belum ada aset tercatat</b>Catat crypto, saham, emas, atau aset lain untuk melihat kekayaan bersih Anda.</div>')+'</section>';
+}
+function holdingRow(h){
+  var c=hCalc(h),k=KIND[c.k],open=S.edit==='a:'+h.id,manual=c.k!=='crypto';
+  var qty=c.k==='stock'?qf(c.q/100)+' lot':c.k==='crypto'?qf(c.q)+' '+esc(h.code):qf(c.q)+' unit';
+  var pl=c.pl==null?'':'<span class="pl '+(c.pl<0?'dn':'up')+'">'+(c.pl<0?'−':'+')+rp(c.pl)+(c.cost?' · '+pct(c.pl/c.cost*100):'')+'</span>';
+  return '<div class="brow sub"><button type="button" class="brow-main" data-act="edit" data-arg="a:'+esc(h.id)+'" aria-expanded="'+open+'"><div class="brow-top hrow"><span class="cic" style="--c:'+k.c+'">'+ic(k.i,19)+'</span><div class="m"><b>'+esc(h.name||h.code)+'</b><span>'+qty+' · '+(c.price==null?'harga belum tersedia':rpx(c.price))+'</span></div><div class="h-val"><b>'+(c.value==null?'–':S.hide?'••••':rp(c.value))+'</b>'+pl+'</div></div></button>'+
+   (open?'<form class="edit aedit" data-form="asset" data-id="'+esc(h.id)+'"><div><label for="edit-in">'+(c.k==='stock'?'Jumlah lot':'Jumlah')+'</label><input class="field" id="edit-in" inputmode="decimal" value="'+nin(c.k==='stock'?c.q/100:c.q)+'"></div>'+
+     (manual?'<div><label for="edit-price">Harga terkini (Rp)</label><input class="field" id="edit-price" inputmode="decimal" value="'+nin(c.price)+'"></div>':'')+
+     '<button type="submit" class="btn primary sm">Simpan</button><button type="button" class="btn sm dangerb" data-act="adel" data-arg="'+esc(h.id)+'">Hapus</button></form>':'')+'</div>';
+}
+
 var VIEWS={
+ aset:function(){
+  var a=assetStats(),list=S.portfolio||[];
+  function f(id,t){return '<button type="button" class="chip" data-act="aflt" data-arg="'+id+'" aria-pressed="'+(S.aflt===id)+'">'+t+'</button>';}
+  var shown=list.filter(function(h){return S.aflt==='all'||hKind(h)===S.aflt;});
+  var kindArg=S.aflt==='all'?'':S.aflt;
+  var market=M.top.length?'<ul class="txs">'+M.top.map(function(c,i){
+    return '<li class="tx"><span class="rank">'+(i+1)+'</span><div class="tx-m"><b>'+esc(c.name)+'</b><span>'+esc(c.sym)+'</span></div><div class="h-val"><b>'+rpx(c.idr)+'</b>'+(c.ch==null?'':'<span class="pl '+(c.ch<0?'dn':'up')+'">'+pct(c.ch)+' · 24j</span>')+'</div><button type="button" class="del addb" data-act="aadd" data-arg="crypto:'+esc(c.sym)+'" aria-label="Catat '+esc(c.name)+' ke aset">'+ic('plus',17)+'</button></li>';
+  }).join('')+'</ul>':'<div class="empty"><b>'+(M.loading?'Memuat harga…':'Harga belum tersedia')+'</b>'+(M.loading?'':'Sumber data sedang tidak dapat dihubungi. Coba muat ulang sebentar lagi.')+'</div>';
+  return topbar()+'<div><h1 class="ttl">Aset</h1></div>'+
+  '<section class="panel glass" aria-label="Ringkasan aset">'+assetSum(a)+'</section>'+
+  '<div class="chips" role="group" aria-label="Filter jenis aset">'+f('all','Semua')+f('crypto','Crypto')+f('stock','Saham')+f('other','Lainnya')+'</div>'+
+  '<section class="panel glass" aria-labelledby="h-hold"><div class="panel-h"><h2 id="h-hold">Aset Saya</h2><button type="button" class="linkbtn" data-act="aadd" data-arg="'+kindArg+'">+ Catat aset</button></div>'+
+   (shown.length?shown.map(holdingRow).join(''):'<div class="empty"><b>'+(list.length?'Belum ada aset di kelompok ini':'Belum ada aset tercatat')+'</b>Catat kode, jumlah, dan harga beli untuk melihat nilai terkini serta untung atau ruginya.</div>')+
+   '<span class="aside">Ketuk aset untuk mengubah jumlah atau menghapusnya. Harga saham dan aset lain diisi manual, harga crypto diperbarui otomatis.</span></section>'+
+  '<section class="panel glass" aria-labelledby="h-mk"><div class="panel-h"><h2 id="h-mk">Pasar Crypto</h2><button type="button" class="linkbtn" data-act="mrefresh"'+(M.loading?' disabled':'')+'>'+(M.loading?'Memuat…':'Muat ulang')+'</button></div>'+market+
+   '<span class="aside">'+(M.at?'Sumber: CoinGecko · diperbarui '+tlabel(M.at)+'.':'Sumber: CoinGecko.')+(M.err&&M.top.length?' Pembaruan terakhir gagal, menampilkan data sebelumnya.':'')+'</span></section>'+
+  '<p class="foot">Informasi ini bukan saran investasi.</p>';
+ },
+
  home:function(){
   var s=stats(S.ym),total=S.wallets.reduce(function(a,w){return a+bal(w);},0),sc=score(s),bl=bills();
   var sr=srStatus(s.sr),us=usedStatus(s.used),em=emStatus(s.em),ld=loadStatus(s.loadR);
@@ -677,6 +885,7 @@ var VIEWS={
    '<div class="score">'+ring(sc==null?0:sc,66,6,sc==null?'–':String(sc),scCol,'Skor kesehatan keuangan '+(sc==null?'belum ada':sc))+'<small>'+scoreLabel(sc)+'</small></div></div>'+
    '<div class="io"><div class="in"><span class="ico">'+ic('down',16)+'</span><div><span>Pemasukan</span><b>'+rpw(s.inc)+'</b></div></div><div class="out"><span class="ico">'+ic('up',16)+'</span><div><span>Pengeluaran</span><b>'+rpw(s.exp)+'</b></div></div></div></section>'+
   '<section class="rx glass sub"><span class="rx-ic">'+ic('pulse',20)+'</span><div><span class="eyebrow">Resep hari ini</span><p>'+esc(tip(s))+'</p></div></section>'+
+  assetCard()+
   '<section class="panel glass" aria-labelledby="h-bill"><div class="panel-h"><h2 id="h-bill">Tagihan Mendatang</h2><span class="aside">'+(bl.length?bl.length+' belum dibayar':'Lunas')+'</span></div>'+
    (billRows||'<div class="done sub">'+ic('check',20)+'Semua tagihan bulan ini sudah dibayar</div>')+'</section>'+
   '<section class="panel glass" aria-labelledby="h-stat"><div class="panel-h"><h2 id="h-stat">Statistik Kesehatan Keuangan</h2><span class="aside">'+ymShort(S.ym)+'</span></div><div class="tiles">'+
@@ -737,21 +946,48 @@ var VIEWS={
   '<section class="panel glass danger-zone" aria-labelledby="h-d"><div class="panel-h"><h2 id="h-d">Data</h2><span class="aside">Tersimpan di server</span></div>'+
    '<button type="button" class="btn'+(S.armed==='sample'?' warnb':'')+'" data-act="rsample">'+(S.armed==='sample'?'Yakin? Ketuk lagi untuk memulihkan':'Pulihkan data contoh')+'</button>'+
    '<button type="button" class="btn'+(S.armed==='empty'?' warnb':'')+'" data-act="rempty">'+(S.armed==='empty'?'Yakin? Ketuk lagi untuk mengosongkan':'Mulai dari nol (kosongkan semua)')+'</button></section>';
+ },
+
+ pro:function(){
+  var status=proStatus||{},plans=status.plans||[],payment=status.payment||{},pending=status.pending_order;
+  var stateLabel=proUnavailable?'Status langganan belum dapat diperiksa. Coba sambungkan kembali.':status.status==='trial'?'Uji coba gratis 7 hari':status.active?'Pro aktif hingga '+proDate(status.expires_at):'Pilih paket untuk membuka semua fitur dashboard.';
+  var cards=plans.map(function(plan){
+    return '<article class="glass pro-plan'+(requestedPlan===plan.id?' selected':plan.id==='annual'?' featured':'')+'"><h2>'+esc(plan.name)+'</h2><span class="pro-price">'+rp(plan.price)+'</span><span class="pro-monthly">Setara '+rp(plan.monthly_price)+' / bulan</span>'+(plan.savings?'<span class="pro-save">Hemat '+rp(plan.savings)+'</span>':'<span class="pro-note">Harga bulanan</span>')+'<button type="button" class="btn primary" data-act="proorder" data-arg="'+esc(plan.id)+'"'+(proOrderBusy?' disabled':'')+'>'+(proOrderBusy?'Membuat order…':'Pilih paket')+'</button></article>';
+  }).join('');
+  var orderPanel='';
+  if(pending){
+    var orderPayment=pending.payment||payment;
+    orderPanel='<section class="panel glass pro-order" aria-label="Order pembayaran"><h2>Order '+esc(pending.order_id)+'</h2><b>'+esc(pending.plan.name)+' · '+rp(pending.amount)+'</b>'+(orderPayment.configured?'<p class="pro-note">Transfer ke '+esc(orderPayment.method)+' · '+esc(orderPayment.account)+'<br>Atas nama '+esc(orderPayment.account_name)+'. Setelah transfer, hubungi admin dan sertakan kode order.</p>':'<p class="pro-note">Instruksi rekening belum dikonfigurasi. Hubungi admin Telegram dan sertakan kode order ini.</p>')+'<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a><button type="button" class="btn primary" data-act="procheck">Periksa status</button></div></section>';
+  }
+  return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&proStatus.active?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'');
  }
 };
 
 /* ---------- render ---------- */
-var NAV={home:['home','Beranda'],tx:['list','Transaksi'],bud:['pie','Anggaran'],wal:['wallet','Dompet']};
+var NAV={home:['home','Beranda'],tx:['list','Transaksi'],bud:['pie','Anggaran'],aset:['layers','Aset'],wal:['wallet','Dompet']};
 function initNav(){
   $$('.nav [data-act="tab"]').forEach(function(b){var n=NAV[b.dataset.arg];b.innerHTML=ic(n[0],22)+'<span>'+n[1]+'</span>';});
   $('#fab').innerHTML=ic('plus',26);
   $('#xbtn').innerHTML=ic('close',18);
+  $('#axbtn').innerHTML=ic('close',18);
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
+  if(!proStatus||proUnavailable){
+    $('.nav').hidden=true;$('#fab').hidden=true;
+    $('#view').innerHTML=proStatus?VIEWS.pro():'<div class="empty">Memeriksa status Doctor Money Pro…</div>';
+    sc.scrollTop=0;return;
+  }
+  if(!proStatus.active){
+    S.tab='pro';$('.nav').hidden=true;$('#fab').hidden=true;
+    $('#view').innerHTML=VIEWS.pro();sc.scrollTop=0;return;
+  }
+  $('.nav').hidden=false;$('#fab').hidden=false;
   $('#view').innerHTML=VIEWS[S.tab]();
   if(migration)$('#view').insertAdjacentHTML('afterbegin',migrationHTML());
   $$('.nav [data-act="tab"]').forEach(function(b){if(b.dataset.arg===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  $('#fab').setAttribute('aria-label',S.tab==='aset'?'Catat aset':'Tambah transaksi');
+  if(S.tab==='aset'||(S.tab==='home'&&(S.portfolio||[]).length))loadMarket();
   sc.scrollTop=y;
   var f=null;
   if(S.editName)f=$('#nameIn');else if(S.edit)f=$('#edit-in');
@@ -818,17 +1054,121 @@ function saveSheet(){
   toast('Tersimpan: '+tx.desc+' · '+(tx.type==='in'?'+':'−')+rp(tx.amt),'Urungkan',function(){S.txs=S.txs.filter(function(t){return t.id!==tx.id;});persist();render();});
 }
 
+/* ---------- asset sheet ---------- */
+function renderAssetForm(){
+  var sh=S.asheet,k=AK[sh.kind];
+  $$('.kseg button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.arg===sh.kind));});
+  $('#acodeL').textContent=k.code;$('#acode').placeholder=k.ph;
+  $('#aqtyL').textContent=k.qty;$('#aqty').placeholder=k.qph;
+  $('#abuyL').textContent=k.buy;
+  $('#anowBox').hidden=sh.kind==='crypto';
+  if(k.now)$('#anowL').textContent=k.now;
+  $('#aquick').innerHTML=k.quick.map(function(c){return '<button type="button" class="chip sm" data-act="aex" data-arg="'+c+'">'+c+'</button>';}).join('');
+}
+function assetDraft(){
+  var nowT=S.asheet.kind==='crypto'?'':$('#anow').value.trim();
+  return {code:$('#acode').value.trim(),q:parseNum($('#aqty').value),buy:parsePrice($('#abuy').value),nowT:nowT,now:nowT?parsePrice(nowT):null};
+}
+function updateAsset(){
+  var sh=S.asheet;if(!sh)return;
+  var d=assetDraft(),pv=$('#apreview'),hint='';
+  if(sh.kind==='crypto'){var c=M.prices[M.ids[d.code.toLowerCase()]];if(c&&c.idr)hint='Harga pasar '+esc(d.code.toUpperCase())+' saat ini '+rpx(c.idr)+'.';else hint='Harga terkini diambil otomatis dari CoinGecko.';}
+  else if(sh.kind==='stock')hint='1 lot = 100 lembar. Harga terkini diisi manual dan bisa diperbarui kapan saja.';
+  else hint='Harga terkini diisi manual dan bisa diperbarui kapan saja.';
+  if(d.q>0&&d.buy!=null&&d.buy>=0){
+    var units=sh.kind==='stock'?d.q*100:d.q;
+    pv.innerHTML='<span class="pv-amt">'+rp(units*d.buy)+'</span><span class="pv-meta">Modal · '+(sh.kind==='stock'?qf(d.q)+' lot ('+qf(units)+' lembar)':qf(units)+(sh.kind==='crypto'?' koin':' unit'))+'</span><span class="pv-hint">'+hint+'</span>';
+  }else pv.innerHTML='<span class="pv-hint">Isi '+AK[sh.kind].code.toLowerCase()+', jumlah, dan harga beli. '+hint+'</span>';
+}
+function openAsset(g){
+  var a=String(g||'').split(':'),kind=KIND[a[0]]?a[0]:'crypto',code=a[1]||'';
+  S.asheet={kind:kind,busy:false};
+  $('#acode').value=code;$('#aqty').value='';$('#anow').value='';$('#asave').disabled=false;
+  var c=kind==='crypto'&&code?M.prices[M.ids[code.toLowerCase()]]:null;
+  $('#abuy').value=c&&c.idr?nin(c.idr>=100?Math.round(c.idr):c.idr):'';
+  var el=$('#asheet');el.hidden=false;
+  renderAssetForm();updateAsset();
+  requestAnimationFrame(function(){el.classList.add('open');$(code?'#aqty':'#acode').focus({preventScroll:true});});
+}
+function closeAsset(){
+  var el=$('#asheet');el.classList.remove('open');S.asheet=null;
+  setTimeout(function(){if(!S.asheet)el.hidden=true;},230);
+}
+async function saveAsset(){
+  var sh=S.asheet;if(!sh||sh.busy)return;
+  var d=assetDraft(),pv=$('#apreview');
+  function err(m,sel){pv.innerHTML='<span class="pv-err">'+m+'</span>';$(sel).focus();}
+  if(!d.code)return err('Isi '+AK[sh.kind].code.toLowerCase()+' terlebih dahulu.','#acode');
+  if(sh.kind==='crypto'&&!/^[A-Za-z0-9._-]{1,20}$/.test(d.code))return err('Simbol koin hanya huruf dan angka, misalnya BTC.','#acode');
+  if(sh.kind==='stock'&&!/^[A-Za-z0-9.]{1,10}$/.test(d.code))return err('Kode saham hanya huruf dan angka, misalnya BBCA.','#acode');
+  if(!(d.q>0)||d.q>1e12)return err('Isi jumlah yang valid, misalnya '+AK[sh.kind].qph+'.','#aqty');
+  if(d.buy==null||d.buy<0||d.buy>1e15)return err('Isi harga beli, misalnya 9.250 atau 1,5jt.','#abuy');
+  if(d.nowT&&(d.now==null||d.now<0||d.now>1e15))return err('Harga terkini tidak valid.','#anow');
+  if((S.portfolio||[]).length>=200){toast('Daftar aset sudah penuh (200). Hapus yang tidak dipakai.');return;}
+  var h={id:uid(),kind:sh.kind,code:d.code,quantity:d.q,purchase_price:d.buy,currency:'IDR'},found=true;
+  if(sh.kind==='crypto'){
+    h.code=d.code.toUpperCase();
+    var key=d.code.toLowerCase(),id=M.ids[key];
+    if(!id){
+      sh.busy=true;$('#asave').disabled=true;pv.innerHTML='<span class="pv-hint">Mencari koin di CoinGecko…</span>';
+      var coin=null,failed=false;
+      try{coin=await findCoin(d.code);}catch(e){failed=true;}
+      if(S.asheet!==sh)return;
+      sh.busy=false;$('#asave').disabled=false;
+      if(!coin&&!failed)return err('Koin tidak ditemukan di CoinGecko. Periksa simbolnya.','#acode');
+      if(coin){id=coin.id;h.code=coin.sym;h.name=coin.name;M.ids[coin.sym.toLowerCase()]=M.ids[coin.sym.toLowerCase()]||coin.id;}
+      else found=false;
+    }
+    if(id){h.asset_id=id;var t=M.top.filter(function(x){return x.id===id;})[0];if(t&&!h.name)h.name=t.name;}
+  }else{
+    if(sh.kind==='stock'){h.code=d.code.toUpperCase();h.quantity=Math.round(d.q*100);if(!h.quantity)return err('Jumlah lot terlalu kecil.','#aqty');}
+    else h.name=d.code;
+    h.price=d.now!=null?d.now:d.buy;h.price_at=ymd(new Date());
+  }
+  S.portfolio=(S.portfolio||[]).concat([h]);persist();
+  closeAsset();S.tab='aset';if(S.aflt!=='all'&&S.aflt!==sh.kind)S.aflt='all';S.edit=null;render();
+  toast(found?'Aset dicatat: '+(h.name||h.code):'Aset dicatat. Harga terkini menyusul saat sumber data tersedia.','Urungkan',function(){S.portfolio=S.portfolio.filter(function(x){return x.id!==h.id;});persist();render();});
+  if(sh.kind==='crypto'&&!(M.prices[h.asset_id]&&M.prices[h.asset_id].usd))loadMarket(true);
+}
+
 /* ---------- actions ---------- */
 function saveName(){
   if(!S.editName)return;
   var i=$('#nameIn'),v=i?i.value.trim():'';
   S.name=v||'Sobat';S.editName=false;persist();render();
 }
+async function createProOrder(planId){
+  if(proOrderBusy)return;
+  proOrderBusy=true;render();
+  try{var order=await apiRequest('/api/pro/orders',{method:'POST',body:JSON.stringify({plan_id:planId})});proStatus.pending_order=order;S.tab='pro';}
+  catch(error){toast(error.message);}
+  proOrderBusy=false;render(false);
+}
+async function refreshProStatus(){
+  if(!apiToken){boot();return;}
+  var wasActive=proStatus&&proStatus.active;
+  try{proStatus=await apiRequest('/api/pro/status');proUnavailable=false;if(proStatus.active&&!wasActive){window.location.reload();return;}if(!proStatus.active)S.tab='pro';render(false);}
+  catch(error){toast(error.message);}
+}
 var ACT={
  tab:function(g){S.tab=g;S.edit=null;S.armed=null;render(false);},
+ proplans:function(){S.tab='pro';render(false);},
+ prohome:function(){S.tab='home';render(false);},
+ proorder:function(g){createProOrder(g);},
+ procheck:function(){refreshProStatus();},
  mprev:function(){var m=shiftYM(curYM(),-12);if(S.ym>m){S.ym=shiftYM(S.ym,-1);S.edit=null;render();}},
  mnext:function(){if(S.ym<curYM()){S.ym=shiftYM(S.ym,1);S.edit=null;render();}},
- add:openSheet,close:closeSheet,
+ add:function(){if(S.tab==='aset')openAsset(S.aflt==='all'?'':S.aflt);else openSheet();},close:closeSheet,
+ aadd:function(g){openAsset(g);},aclose:closeAsset,
+ akind:function(g){if(!S.asheet||!KIND[g])return;S.asheet.kind=g;renderAssetForm();updateAsset();},
+ aex:function(g){$('#acode').value=g;updateAsset();$('#aqty').focus();},
+ aflt:function(g){S.aflt=g;S.edit=null;render();},
+ adel:function(g){
+  var list=S.portfolio||[],i=list.map(function(h){return h.id;}).indexOf(g);if(i<0)return;
+  var h=list.splice(i,1)[0];S.edit=null;persist();render();
+  toast('Dihapus: '+(h.name||h.code),'Urungkan',function(){S.portfolio.splice(Math.min(i,S.portfolio.length),0,h);persist();render();});
+ },
+ mrefresh:function(){loadMarket(true);render();},
  hide:function(){S.hide=!S.hide;render();},
  importLegacy:async function(){if(!migration)return;try{var result=await apiRequest('/api/import/confirm',{method:'POST',body:JSON.stringify({state:migration.state})});adoptState(migration.state);serverRevision=result.revision;lastSynced=JSON.parse(JSON.stringify(migration.state));migration=null;try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Data lama berhasil dipindahkan.');}catch(e){toast(e.message);}},
  discardLegacy:function(){if(!migration)return;try{localStorage.setItem(LEGACY_KEY,JSON.stringify(legacyState));}catch(e){}migration=null;adoptState(lastSynced);try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Akun baru siap. Cadangan data lama tetap di browser.');},
@@ -868,7 +1208,7 @@ var ACT={
  },
  rempty:function(){
   if(S.armed!=='empty'){S.armed='empty';render();setTimeout(function(){if(S.armed==='empty'){S.armed=null;if(S.tab==='wal')render();}},4000);return;}
-  S.txs=[];S.wallets.forEach(function(w){w.start=0;});S.goals.forEach(function(g){g.s=0;});S.armed=null;S.edit=null;persist();render();
+  S.txs=[];S.portfolio=[];S.wallets.forEach(function(w){w.start=0;});S.goals.forEach(function(g){g.s=0;});S.armed=null;S.edit=null;persist();render();
   toast('Semua data dikosongkan. Ketuk dompet untuk mengisi saldo awal.');
  }
 };
@@ -881,6 +1221,15 @@ document.addEventListener('submit',function(e){
   e.preventDefault();var f=e.target;
   if(migration){toast('Pilih dahulu sumber data yang akan digunakan.');return;}
   if(f.id==='addForm'){saveSheet();return;}
+  if(f.id==='assetForm'){saveAsset();return;}
+  if(f.dataset.form==='asset'){
+    var h=(S.portfolio||[]).filter(function(x){return x.id===f.dataset.id;})[0];if(!h)return;
+    var q=parseNum($('#edit-in').value),pe=$('#edit-price'),pr=pe?parsePrice(pe.value):null;
+    if(!(q>0)||q>1e12||(pe&&(pr==null||pr<0||pr>1e15))){toast('Isi angka yang valid, misalnya 0,5 atau 9.250');return;}
+    h.quantity=hKind(h)==='stock'?Math.round(q*100):q;
+    if(pe){h.price=pr;h.price_at=ymd(new Date());}
+    S.edit=null;persist();render();toast('Tersimpan');return;
+  }
   if(f.dataset.form==='telegram-link'){apiRequest('/api/link',{method:'POST',body:JSON.stringify({code:$('#linkCode').value.trim()})}).then(function(){linkedTelegram=true;render();toast('Akun Telegram berhasil dihubungkan.');}).catch(function(error){toast(error.message);});return;}
   if(f.dataset.form){
     var p=parseAmount($('#edit-in').value);
@@ -893,6 +1242,7 @@ document.addEventListener('submit',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     if(S.sheet)closeSheet();
+    else if(S.asheet)closeAsset();
     else if(S.edit||S.editName){S.edit=null;S.editName=false;render();}
   }
   if(e.key==='Enter'&&e.target.id==='nameIn'){e.preventDefault();saveName();}
@@ -901,6 +1251,7 @@ document.addEventListener('focusout',function(e){if(e.target.id==='nameIn')saveN
 document.addEventListener('input',function(e){
   if(e.target.id==='qtext'){if(S.sheet){S.sheet.typeManual=S.sheet.typeManual;updateSheet();}}
   if(e.target.id==='q'){S.q=e.target.value;$('#txList').innerHTML=txListHTML();}
+  if(/^(acode|aqty|abuy|anow)$/.test(e.target.id))updateAsset();
 });
 document.addEventListener('change',function(e){
   if(e.target.id==='qwallet'&&S.sheet){S.sheet.wallet=e.target.value;updateSheet();}
@@ -915,8 +1266,11 @@ function pickDay(e){
 document.addEventListener('pointermove',pickDay);
 document.addEventListener('pointerdown',pickDay);
 
+window.setInterval(function(){if(S.tab==='aset'&&!document.hidden)loadMarket();},60000);
+
 initNav();
 $('#view').innerHTML='<div class="empty">Menghubungkan ke penyimpanan Doctor Money…</div>';
+$('.nav').hidden=true;$('#fab').hidden=true;
 boot();
 })();
 </script>

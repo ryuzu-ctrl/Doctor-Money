@@ -10,7 +10,9 @@ _database_path = os.path.join(tempfile.gettempdir(), f"doctor-money-{uuid.uuid4(
 os.environ["DATABASE_URL"] = "sqlite:///" + _database_path
 
 from backend.app import app
-from backend.database import engine
+from backend.database import SessionLocal, engine
+from backend.models import ProAccess
+from backend.repository import account_for_token, now_utc
 
 
 @pytest.fixture
@@ -61,14 +63,72 @@ def test_import_preview_skips_seed_transactions_without_writing(client):
     assert client.get("/api/state", headers=headers).json()["state"]["txs"][0]["id"] == "u1"
 
 
+def test_pro_trial_manual_order_and_admin_activation(client, monkeypatch):
+    token, _ = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    monkeypatch.setenv("PRO_PAYMENT_METHOD", "BCA")
+    monkeypatch.setenv("PRO_PAYMENT_ACCOUNT", "1234567890")
+    monkeypatch.setenv("PRO_PAYMENT_ACCOUNT_NAME", "Doctor Money")
+    monkeypatch.setenv("PRO_ADMIN_SECRET", "test-pro-admin-secret")
+
+    status = client.get("/api/pro/status", headers=headers)
+    assert status.status_code == 200
+    assert status.json()["status"] == "trial" and status.json()["active"] is True
+    assert [(plan["id"], plan["price"]) for plan in status.json()["plans"]] == [
+        ("monthly", 20_000), ("six_months", 100_000), ("annual", 180_000)
+    ]
+
+    order = client.post("/api/pro/orders", headers=headers, json={"plan_id": "six_months"})
+    assert order.status_code == 200
+    order_body = order.json()
+    assert order_body["amount"] == 100_000
+    assert order_body["payment"]["account"] == "1234567890"
+    duplicate = client.post("/api/pro/orders", headers=headers, json={"plan_id": "six_months"})
+    assert duplicate.status_code == 200 and duplicate.json()["order_id"] == order_body["order_id"]
+    admin_headers = {"Authorization": "Bearer test-pro-admin-secret"}
+    pending = client.get("/api/admin/pro/orders", headers=admin_headers)
+    assert [item["order_id"] for item in pending.json()["orders"]] == [order_body["order_id"]]
+    denied = client.post(f"/api/admin/pro/orders/{order_body['order_id']}/activate", headers={"Authorization": "Bearer wrong"})
+    assert denied.status_code == 401
+
+    activated = client.post(f"/api/admin/pro/orders/{order_body['order_id']}/activate", headers=admin_headers)
+    assert activated.status_code == 200 and activated.json()["status"] == "paid"
+    assert client.get("/api/state", headers=headers).status_code == 200
+    assert client.get("/api/pro/status", headers=headers).json()["plan"]["id"] == "six_months"
+
+
+def test_expired_pro_blocks_dashboard_data_but_allows_new_order(client):
+    token, _ = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    client.get("/api/pro/status", headers=headers)
+    with SessionLocal() as db:
+        account_row = account_for_token(db, token)
+        access = db.get(ProAccess, account_row.id)
+        access.status = "expired"
+        access.trial_ends_at = now_utc()
+        db.commit()
+
+    assert client.get("/api/state", headers=headers).status_code == 402
+    order = client.post("/api/pro/orders", headers=headers, json={"plan_id": "annual"})
+    assert order.status_code == 200 and order.json()["amount"] == 180_000
+
+
 def test_root_and_dashboard_routes_are_available(client):
     landing = client.get("/")
     assert landing.status_code == 200
     assert "t.me" in landing.text.lower() or "telegram" in landing.text.lower()
+    assert 'href="/dashboard"' in landing.text
+    assert 'id="pro"' in landing.text
+    assert 'href="/dashboard?plan=six_months"' in landing.text
+    assert "Rp 180.000" in landing.text
 
     dashboard = client.get("/dashboard")
     assert dashboard.status_code == 200
     assert "Doctor Money" in dashboard.text
+    assert "/api/pro/status" in dashboard.text
+    assert "Pilih paket" in dashboard.text
+    assert 'id="addForm"' in dashboard.text
+    assert 'href="/"' in dashboard.text
 
 
 def teardown_module():
