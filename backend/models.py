@@ -43,4 +43,9 @@ def init_db() -> None:
     if engine.dialect.name == "postgresql":
         with engine.begin() as conn:
             for table in ("accounts", "pair_codes"):
-                conn.exec_driver_sql(f"ALTER TABLE {table} ALTER COLUMN telegram_id TYPE BIGINT")
+                data_type = conn.exec_driver_sql(
+                    "SELECT data_type FROM information_schema.columns WHERE table_name = %s AND column_name = 'telegram_id'",
+                    (table,),
+                ).scalar()
+                if data_type == "integer":
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ALTER COLUMN telegram_id TYPE BIGINT")

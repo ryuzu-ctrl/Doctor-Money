@@ -21,11 +21,22 @@ if [ "$APP_RUNTIME" = "all" ]; then
   # Buat tabel sekali sebelum dua proses start agar tidak saling balapan.
   python -c "from backend.models import init_db; init_db()"
   uvicorn backend.app:app --host 0.0.0.0 --port "$PORT" &
-  python -m bot.main &
-  # Jika salah satu proses berhenti, hentikan container agar Railway me-restart.
-  wait -n
+  api_pid=$!
+  # Bot yang gagal (token salah, Telegram tidak terjangkau) dimulai ulang
+  # tanpa mematikan dashboard/API.
+  (
+    while true; do
+      python -m bot.main || echo "Bot berhenti (kode $?). Cek BOT_TOKEN. Mulai ulang dalam 15 detik." >&2
+      sleep 15
+    done
+  ) &
+  bot_loop_pid=$!
+  trap 'kill "$api_pid" "$bot_loop_pid" 2>/dev/null || true' TERM INT
+  # Container hanya berhenti (dan di-restart Railway) jika API berhenti.
+  set +e
+  wait "$api_pid"
   status=$?
-  kill 0 2>/dev/null || true
+  kill "$bot_loop_pid" 2>/dev/null || true
   exit "$status"
 fi
 
