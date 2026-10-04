@@ -7,4 +7,5 @@ __pycache__/
 .venv/
 venv/
 node_modules/
-*.py[cod]
+*.py[cod]firebase-debug.log
+*.log

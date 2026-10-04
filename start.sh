@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_RUNTIME="${APP_RUNTIME:-bot}"
+# all  = API/dashboard + bot (polling) dalam satu service (default, cocok untuk Railway)
+# api  = hanya API/dashboard
+# bot  = hanya bot Telegram
+APP_RUNTIME="${APP_RUNTIME:-all}"
 PORT="${PORT:-8080}"
 
 if [ "$APP_RUNTIME" = "api" ]; then
@@ -12,5 +15,30 @@ if [ "$APP_RUNTIME" = "bot" ]; then
   exec python -m bot.main
 fi
 
-echo "APP_RUNTIME harus bernilai 'bot' atau 'api'" >&2
+if [ "$APP_RUNTIME" = "all" ]; then
+  # PORT dipakai FastAPI, jadi bot wajib polling agar tidak berebut port.
+  export MODE=polling
+  # Buat tabel sekali sebelum dua proses start agar tidak saling balapan.
+  python -c "from backend.models import init_db; init_db()"
+  uvicorn backend.app:app --host 0.0.0.0 --port "$PORT" &
+  api_pid=$!
+  # Bot yang gagal (token salah, Telegram tidak terjangkau) dimulai ulang
+  # tanpa mematikan dashboard/API.
+  (
+    while true; do
+      python -m bot.main || echo "Bot berhenti (kode $?). Cek BOT_TOKEN. Mulai ulang dalam 15 detik." >&2
+      sleep 15
+    done
+  ) &
+  bot_loop_pid=$!
+  trap 'kill "$api_pid" "$bot_loop_pid" 2>/dev/null || true' TERM INT
+  # Container hanya berhenti (dan di-restart Railway) jika API berhenti.
+  set +e
+  wait "$api_pid"
+  status=$?
+  kill "$bot_loop_pid" 2>/dev/null || true
+  exit "$status"
+fi
+
+echo "APP_RUNTIME harus bernilai 'all', 'bot', atau 'api'" >&2
 exit 1
