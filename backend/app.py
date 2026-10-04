@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Generator, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -31,6 +32,14 @@ if engine.dialect.name == "postgresql":
         connection.exec_driver_sql('ALTER TABLE "pro_access" ENABLE ROW LEVEL SECURITY')
         connection.exec_driver_sql('ALTER TABLE "pro_orders" ENABLE ROW LEVEL SECURITY')
 app = FastAPI(title="Doctor Money API", version="1.0.0")
+webapp_url = os.getenv("WEBAPP_URL", "").strip().rstrip("/")
+if webapp_url:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[webapp_url],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 DASHBOARD_FILE = FRONTEND_DIR / "dashboard.html"
 LANDING_FILE = FRONTEND_DIR / "index.html"

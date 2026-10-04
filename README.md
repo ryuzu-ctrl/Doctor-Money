@@ -6,8 +6,8 @@ Doctor Money menyediakan dashboard web dan bot Telegram di atas satu penyimpanan
 ## Persiapan
 
 1. Buat bot melalui [@BotFather](https://t.me/BotFather), jalankan `/newbot`, lalu simpan token bot.
-2. Salin `.env.example` menjadi `.env`; isi `BOT_TOKEN`, `APP_SECRET` acak minimal 32 byte, `WEBAPP_URL` HTTPS publik, `DATABASE_URL`, `MODE`, dan `TZ`. Jangan commit `.env`.
-3. Atur `WEBAPP_URL` ke domain yang diarahkan ke API. Dashboard disajikan pada `/`; API berada di `/api`.
+2. Salin `.env.example` menjadi `.env`; isi `BOT_TOKEN`, `APP_SECRET` acak minimal 32 byte, `WEBAPP_URL` HTTPS Firebase Hosting, `DATABASE_URL`, `MODE`, dan `TZ`. Jangan commit `.env`.
+3. Dashboard dapat disajikan oleh Firebase Hosting; API tetap berada di service backend pada `/api`.
 4. Pasang Python 3.11 atau lebih baru, lalu pasang dependensi:
 
 	```bash
@@ -70,12 +70,19 @@ Langkahnya:
 python -m bot.main
 ```
 
-5. Pastikan `MODE=webhook`, `WEBHOOK_URL` adalah URL publik Railway, dan `WEBAPP_URL` adalah URL publik aplikasi web Anda.
+5. Pastikan `MODE=webhook`, `WEBHOOK_URL` adalah URL publik service API Railway, dan `WEBAPP_URL` adalah URL Firebase Hosting Anda (misalnya `https://<project-id>.web.app`). URL tersebut juga menjadi origin CORS yang diizinkan API.
 6. Gunakan `APP_SECRET` yang kuat untuk webhook Telegram dan pairing code.
+7. Pastikan `API_BASE_URL` pada `frontend/dashboard.html` mengarah ke URL service API Railway, lalu deploy frontend:
+
+```bash
+firebase deploy --only hosting
+```
+
+Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim semua permintaan `/api/*` langsung ke service API. Jika domain API berubah, sesuaikan `API_BASE_URL`; jika domain Firebase berubah, sesuaikan `WEBAPP_URL` pada environment service API agar CORS hanya mengizinkan origin yang benar.
 
 Karena bot dan backend memakai database yang sama, semua akun Telegram, state, dan data keuangan dibagikan melalui satu sumber data. Tidak ada data terpisah untuk bot dan dashboard.
 
-Untuk webhook, set `MODE=webhook`, `WEBHOOK_URL=https://domain-publik`, dan `PORT=8080`. Arahkan reverse proxy hanya untuk path `/telegram/<hash>` ke layanan bot port 8080; rute `/` dan `/api/*` harus tetap menuju FastAPI. Webhook menggunakan secret token Telegram. Menu button Telegram didaftarkan ke `WEBAPP_URL` saat bot mulai.
+Untuk webhook, set `MODE=webhook`, `WEBHOOK_URL=https://domain-publik`, dan `PORT=8080`. Arahkan reverse proxy hanya untuk path `/telegram/<hash>` ke layanan bot port 8080; rute `/` dan `/api/*` harus tetap menuju FastAPI. Webhook menggunakan secret token Telegram. Menu button Telegram didaftarkan ke URL Firebase Hosting pada `WEBAPP_URL` saat bot mulai.
 
 Mini App memuat `Telegram.WebApp`, memanggil `ready()`/`expand()`, dan meneruskan `initData` ke API. Backend memvalidasi tanda tangan HMAC-SHA256 menggunakan `BOT_TOKEN` dan menolak data kedaluwarsa sebelum mengaitkan akun. Jangan pernah menerima `telegram_id` dari body sebagai identitas.
 

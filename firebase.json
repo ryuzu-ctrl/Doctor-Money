@@ -16,6 +16,12 @@
           }
         ]
       }
+    ],
+    "rewrites": [
+      {
+        "source": "/dashboard",
+        "destination": "/dashboard.html"
+      }
     ]
   }
 }

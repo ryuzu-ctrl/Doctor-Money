@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 _database_path = os.path.join(tempfile.gettempdir(), f"doctor-money-{uuid.uuid4().hex}.db")
 os.environ["DATABASE_URL"] = "sqlite:///" + _database_path
+os.environ["WEBAPP_URL"] = "https://doctor-money.example.web.app"
 
 from backend.app import app
 from backend.database import SessionLocal, engine
@@ -36,6 +37,29 @@ def test_new_account_is_empty_and_bearer_authenticated(client):
     assert client.get("/api/state").status_code == 401
     response = client.get("/api/state", headers={"Authorization": "Bearer " + token})
     assert response.status_code == 200 and response.json()["revision"] == 0
+
+
+def test_firebase_hosting_origin_is_allowed_for_api_requests(client):
+    response = client.options(
+        "/api/accounts",
+        headers={
+            "Origin": "https://doctor-money.example.web.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://doctor-money.example.web.app"
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()
+
+    blocked = client.options(
+        "/api/accounts",
+        headers={
+            "Origin": "https://untrusted.example",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert blocked.status_code == 400
 
 
 def test_state_save_conflict_and_user_isolation(client):
