@@ -41,9 +41,12 @@ LAST_REQUEST: dict[int, float] = {}
 
 
 def _webapp_url() -> str:
-    value = os.getenv("WEBAPP_URL", "").strip()
+    value = os.getenv("WEBAPP_URL", "").strip().strip("\"'").rstrip("/")
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    if not value and railway_domain:
+        value = "https://" + railway_domain
     if not value.startswith("https://"):
-        raise RuntimeError("WEBAPP_URL wajib berisi URL HTTPS publik")
+        raise RuntimeError(f"WEBAPP_URL wajib berisi URL HTTPS publik (nilai sekarang: {value!r})")
     return value
 
 
