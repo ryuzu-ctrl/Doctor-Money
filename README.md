@@ -51,38 +51,24 @@ docker compose up --build -d
 
 Compose menjalankan API pada port 8000 dan bot pada polling dengan volume database persisten. Taruh reverse proxy HTTPS di depannya; jangan mengekspos database atau endpoint internal. Cadangkan volume `doctor-money-data` secara rutin. Untuk multi-instance/traffic tinggi, pindahkan SQLite ke PostgreSQL.
 
-### Deployment Supabase + Railway
+### Deployment Supabase + Railway + Firebase
 
-Untuk arsitektur produksi yang Anda pilih:
+Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menjalankan API dan bot sebagai dua service terpisah; Firebase Hosting tetap menyajikan halaman web. Kedua Railway service memakai Supabase Postgres yang sama.
 
-- Database utama: Supabase Postgres.
-- Bot Telegram: Railway.
-- Dashboard web: tetap dapat di-hosting secara terpisah; frontend hanya berkomunikasi ke API/backend yang mengakses data yang sama.
-
-Langkahnya:
-
-1. Buat project Supabase baru dan salin connection string Postgres dari panel Database.
-2. Isi `DATABASE_URL` sesuai contoh di `.env.example` dengan URL Supabase Anda.
-3. Buat service baru di Railway dari repo ini.
-4. Set variabel lingkungan sesuai `.env.example`, lalu pilih start command:
-
-```bash
-python -m bot.main
-```
-
-5. Pastikan `MODE=webhook`, `WEBHOOK_URL` adalah URL publik service API Railway, dan `WEBAPP_URL` adalah URL Firebase Hosting Anda (misalnya `https://<project-id>.web.app`). URL tersebut juga menjadi origin CORS yang diizinkan API.
-6. Gunakan `APP_SECRET` yang kuat untuk webhook Telegram dan pairing code.
-7. Pastikan `API_BASE_URL` pada `frontend/dashboard.html` mengarah ke URL service API Railway, lalu deploy frontend:
+1. Buat project Supabase dan ambil connection string Postgres. Atur `DATABASE_URL` dengan format SQLAlchemy `postgresql+psycopg://...`; jika koneksi Direct tidak dapat dijangkau dari Railway, gunakan connection string Session Pooler dari Supabase.
+2. Buat dua service Railway dari repository ini: satu untuk API dan satu untuk bot. Keduanya memakai konfigurasi `railway.json` dan script `start.sh`.
+3. Pada service API, atur `APP_RUNTIME=api`. Pada service bot, atur `APP_RUNTIME=bot` dan `MODE=polling`. Buat domain publik hanya untuk service API; bot polling tidak memerlukan domain publik.
+4. Isi variabel yang diperlukan pada kedua service: `DATABASE_URL`, `BOT_TOKEN`, `APP_SECRET`, `WEBAPP_URL=https://doctor-moneys.web.app`, dan `TZ=Asia/Jakarta`. `APP_SECRET` harus berupa nilai acak yang kuat dan sama pada kedua service. Tambahkan variabel `PRO_*` dan `COINGECKO_API_KEY` bila fitur tersebut digunakan.
+5. Salin domain publik API Railway ke `API_BASE_URL` pada `frontend/dashboard.html` (tanpa garis miring di akhir). Pastikan `WEBAPP_URL` pada service API sama dengan origin Firebase Hosting agar CORS mengizinkan dashboard.
+6. Deploy frontend ke Firebase Hosting:
 
 ```bash
 firebase deploy --only hosting
 ```
 
-Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim semua permintaan `/api/*` langsung ke service API. Jika domain API berubah, sesuaikan `API_BASE_URL`; jika domain Firebase berubah, sesuaikan `WEBAPP_URL` pada environment service API agar CORS hanya mengizinkan origin yang benar.
+Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim permintaan `/api/*` langsung ke API Railway. API dan bot berbagi akun, state, serta data lewat Supabase. Jika domain API atau Firebase berubah, perbarui `API_BASE_URL`/`WEBAPP_URL` lalu deploy ulang frontend bila `API_BASE_URL` berubah.
 
-Karena bot dan backend memakai database yang sama, semua akun Telegram, state, dan data keuangan dibagikan melalui satu sumber data. Tidak ada data terpisah untuk bot dan dashboard.
-
-Untuk webhook, set `MODE=webhook`, `WEBHOOK_URL=https://domain-publik`, dan `PORT=8080`. Arahkan reverse proxy hanya untuk path `/telegram/<hash>` ke layanan bot port 8080; rute `/` dan `/api/*` harus tetap menuju FastAPI. Webhook menggunakan secret token Telegram. Menu button Telegram didaftarkan ke URL Firebase Hosting pada `WEBAPP_URL` saat bot mulai.
+Gunakan `MODE=webhook` hanya jika Anda memang mengatur webhook. Dalam mode itu, `WEBHOOK_URL` harus menunjuk ke domain publik service bot yang menjalankan `bot.main`, bukan otomatis domain API.
 
 Mini App memuat `Telegram.WebApp`, memanggil `ready()`/`expand()`, dan meneruskan `initData` ke API. Backend memvalidasi tanda tangan HMAC-SHA256 menggunakan `BOT_TOKEN` dan menolak data kedaluwarsa sebelum mengaitkan akun. Jangan pernah menerima `telegram_id` dari body sebagai identitas.
 
