@@ -13,14 +13,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .database import Base, SessionLocal, engine
-from .models import Account
+from .database import SessionLocal
+from .models import Account, init_db
 from .repository import account_for_token, issue_token, make_pair_code, new_account, put_state, state_of, use_pair_code
 from .security import InitDataError, validate_init_data
 from bot.services.finance import empty_state, prepare_legacy_state
 
 
-Base.metadata.create_all(bind=engine)
+init_db()
 app = FastAPI(title="Doctor Money API", version="1.0.0")
 DASHBOARD_FILE = Path(__file__).resolve().parents[1] / "dashboard" / "Doctor Money.html"
 _rate_lock = threading.Lock()

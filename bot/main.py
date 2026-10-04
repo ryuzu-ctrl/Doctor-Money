@@ -1,4 +1,5 @@
 import asyncio
+import calendar
 import hashlib
 import json
 import logging
@@ -13,8 +14,8 @@ from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Men
 from telegram.constants import ParseMode
 from telegram.ext import AIORateLimiter, Application, ApplicationBuilder, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
-from backend.database import Base, SessionLocal, engine
-from backend.models import Account
+from backend.database import SessionLocal
+from backend.models import Account, init_db
 from backend.repository import account_for_telegram, make_pair_code, read_bot_state
 from bot.handlers import finance, markets
 from bot.keyboards import back_menu, main_menu
@@ -214,7 +215,8 @@ async def reminders_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                     continue
                 snooze = reminder.get("snooze_until")
                 frequency = reminder.get("frequency", "bulanan")
-                schedule_due = frequency == "harian" or (frequency == "mingguan" and now.isoweekday() == int(reminder.get("day", 1))) or (frequency == "bulanan" and now.day == int(reminder.get("day", 1)))
+                last_day = calendar.monthrange(now.year, now.month)[1]
+                schedule_due = frequency == "harian" or (frequency == "mingguan" and now.isoweekday() == int(reminder.get("day", 1))) or (frequency == "bulanan" and now.day == min(int(reminder.get("day", 1)), last_day))
                 is_due = snooze <= today if snooze else now.hour == 9 and schedule_due
                 if is_due:
                     due.append(reminder)
@@ -223,14 +225,16 @@ async def reminders_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                 from backend.repository import apply_bot_mutation
                 def mark_sent(current, reminder_id=reminder["id"]):
                     for item in current.get("reminders", []):
-                        if item.get("id") == reminder_id: item["last_sent"] = today
+                        if item.get("id") == reminder_id:
+                            item["last_sent"] = today
+                            item["snooze_until"] = None
                 apply_bot_mutation(telegram_id, mark_sent)
         except Exception:
             logger.exception("Job pengingat gagal", extra={"user_id": telegram_id})
 
 
 async def post_init(application: Application) -> None:
-    Base.metadata.create_all(bind=engine)
+    init_db()
     webapp = WebAppInfo(url=_webapp_url())
     await application.bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Doctor Money", web_app=webapp))
     await application.bot.set_my_commands(_commands())

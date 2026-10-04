@@ -18,6 +18,8 @@ fi
 if [ "$APP_RUNTIME" = "all" ]; then
   # PORT dipakai FastAPI, jadi bot wajib polling agar tidak berebut port.
   export MODE=polling
+  # Buat tabel sekali sebelum dua proses start agar tidak saling balapan.
+  python -c "from backend.models import init_db; init_db()"
   uvicorn backend.app:app --host 0.0.0.0 --port "$PORT" &
   python -m bot.main &
   # Jika salah satu proses berhenti, hentikan container agar Railway me-restart.

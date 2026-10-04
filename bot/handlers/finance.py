@@ -417,6 +417,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     return
                 reminder["last_paid"] = today
                 reminder["last_sent"] = today
+                reminder["snooze_until"] = None
                 state.setdefault("txs", []).append({"id": "b" + uuid.uuid4().hex[:16], "date": today, "desc": reminder["name"], "cat": "tagihan", "amt": int(reminder["amount"]), "w": state.get("wallets", [{}])[0].get("id", "main"), "type": "out"})
             elif action == "snooze": reminder["snooze_until"] = (datetime.now(_zone(state)).date() + timedelta(days=1)).isoformat()
         apply_bot_mutation(user_id, update_reminder)
