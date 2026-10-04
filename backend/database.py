@@ -18,6 +18,12 @@ def _normalize_url(url: str) -> str:
 
 
 DATABASE_URL = _normalize_url(os.getenv("DATABASE_URL", "") or "sqlite:///./doctor_money.db")
+if "${{" in DATABASE_URL or "DATABASE_URL=" in DATABASE_URL or not DATABASE_URL.startswith(("sqlite", "postgresql+psycopg://")):
+    _scheme = DATABASE_URL.split("://", 1)[0][:40]
+    raise RuntimeError(
+        "DATABASE_URL tidak valid (diawali " + repr(_scheme) + ", panjang " + str(len(DATABASE_URL)) + " karakter). "
+        "Di Railway isi dengan ${{<nama service Postgres>.DATABASE_URL}} dan pastikan nama service-nya sama persis."
+    )
 _connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
