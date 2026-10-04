@@ -12,6 +12,10 @@ load_dotenv()
 def resolve_database_url() -> str:
     configured = os.getenv("DATABASE_URL")
     if configured:
+        if configured.startswith("postgres://"):
+            return "postgresql+psycopg://" + configured.removeprefix("postgres://")
+        if configured.startswith("postgresql://"):
+            return "postgresql+psycopg://" + configured.removeprefix("postgresql://")
         return configured
 
     pguser = os.getenv("PGUSER") or os.getenv("POSTGRES_USER")

@@ -1,6 +1,27 @@
+import pytest
 from sqlalchemy import create_engine, inspect, text
 
-from backend.database import migrate_auth_schema
+from backend.database import migrate_auth_schema, resolve_database_url
+
+
+@pytest.mark.parametrize("scheme", ["postgres://", "postgresql://"])
+def test_resolve_database_url_uses_installed_driver_for_postgres(monkeypatch, scheme):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        f"{scheme}user:password@postgres.railway.internal:5432/railway?sslmode=disable",
+    )
+
+    assert resolve_database_url() == (
+        "postgresql+psycopg://user:password@postgres.railway.internal:5432/railway"
+        "?sslmode=disable"
+    )
+
+
+def test_resolve_database_url_preserves_explicit_driver(monkeypatch):
+    configured = "postgresql+psycopg://user:password@localhost:5432/app"
+    monkeypatch.setenv("DATABASE_URL", configured)
+
+    assert resolve_database_url() == configured
 
 
 def test_auth_schema_migration_adds_credentials_to_existing_accounts(tmp_path):

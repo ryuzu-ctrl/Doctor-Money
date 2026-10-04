@@ -49,7 +49,7 @@ Data entitlement dan order disimpan pada tabel `pro_access` dan `pro_orders`, ya
 
 Menu utama Telegram menyediakan Web App dan 22 tombol fitur. Command keuangan mencakup `/catat`, `/riwayat`, `/saldo`, `/wallet`, `/transfer`, `/budget`, `/laporan`, `/grafik`, `/pengingat`, `/simulasi`, `/zona`, `/hubungkan`, dan `/hapusdata`. Command pasar mencakup `/topcrypto`, `/crypto`, `/indeks`, `/saham`, `/kurs`, `/watchlist`, `/alert`, `/portofolio`, `/emas`, dan `/feargreed`. `/alert BTC > 70000` dapat langsung membuat alert. Pengaitan memakai kode satu kali yang kedaluwarsa dalam 10 menit. Bot yang belum terhubung memakai akun lokal yang terisolasi per `telegram_id`; saat ditautkan, bot dan dashboard membaca state yang sama.
 
-API menyimpan JSON state dashboard dengan revisi optimistis dalam SQLite. Bot dan API menggunakan transaksi repository yang sama. Untuk PostgreSQL, ganti `DATABASE_URL` dengan URL SQLAlchemy `postgresql+psycopg://...` dan tambahkan driver `psycopg` pada deployment.
+API menyimpan JSON state dashboard dengan revisi optimistis dalam database yang dikonfigurasi. Bot dan API menggunakan transaksi repository yang sama. `DATABASE_URL` menerima URL PostgreSQL Railway (`postgresql://...`) maupun SQLAlchemy (`postgresql+psycopg://...`); URL PostgreSQL standar otomatis menggunakan driver `psycopg` yang disertakan.
 
 ## Docker dan Produksi
 
@@ -57,16 +57,16 @@ API menyimpan JSON state dashboard dengan revisi optimistis dalam SQLite. Bot da
 docker compose up --build -d
 ```
 
-Compose menjalankan API pada port 8000 dan bot pada polling dengan volume database persisten. Taruh reverse proxy HTTPS di depannya; jangan mengekspos database atau endpoint internal. Cadangkan volume `doctor-money-data` secara rutin. Untuk multi-instance/traffic tinggi, pindahkan SQLite ke PostgreSQL.
+Compose menjalankan API pada port 8000 dan bot pada polling dengan volume database persisten. Taruh reverse proxy HTTPS di depannya; jangan mengekspos database atau endpoint internal. Cadangkan volume `doctor-money-data` secara rutin. Untuk deployment Railway atau multi-instance, gunakan PostgreSQL.
 
-### Deployment Supabase + Railway + Firebase
+### Deployment Railway Postgres + Firebase
 
-Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menjalankan API dan bot sebagai dua service terpisah; Firebase Hosting tetap menyajikan halaman web. Kedua Railway service memakai Supabase Postgres yang sama.
+Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menjalankan API, bot, dan Postgres; Firebase Hosting tetap menyajikan halaman web. Kedua service aplikasi Railway harus memakai database Postgres yang sama.
 
-1. Buat project Supabase dan ambil connection string Postgres. Atur `DATABASE_URL` dengan format SQLAlchemy `postgresql+psycopg://...`; jika koneksi Direct tidak dapat dijangkau dari Railway, gunakan connection string Session Pooler dari Supabase.
-2. Buat dua service Railway dari repository ini: satu untuk API dan satu untuk bot. Keduanya memakai konfigurasi `railway.json` dan script `start.sh`.
+1. Tambahkan service PostgreSQL pada project dan environment Railway yang sama dengan aplikasi. Di setiap service aplikasi, buat variable reference `DATABASE_URL` yang menunjuk ke `DATABASE_URL` milik service PostgreSQL (misalnya `${{Postgres.DATABASE_URL}}`, dengan nama service yang sesuai). Gunakan URL private internal Railway, bukan public proxy URL, untuk service yang berjalan di Railway.
+2. Buat dua service Railway dari repository ini: satu untuk API dan satu untuk bot. Keduanya memakai konfigurasi `railway.json` dan script `start.sh`. URL PostgreSQL standar Railway (`postgresql://...`) otomatis diarahkan ke driver `psycopg`.
 3. Pada service API, atur `APP_RUNTIME=api`. Pada service bot, atur `APP_RUNTIME=bot` dan `MODE=polling`. Buat domain publik hanya untuk service API; bot polling tidak memerlukan domain publik.
-4. Isi variabel yang diperlukan pada kedua service: `DATABASE_URL`, `BOT_TOKEN`, `APP_SECRET`, `WEBAPP_URL=https://doctor-moneys.web.app`, dan `TZ=Asia/Jakarta`. `APP_SECRET` harus berupa nilai acak yang kuat dan sama pada kedua service. Tambahkan variabel `PRO_*` dan `COINGECKO_API_KEY` bila fitur tersebut digunakan.
+4. Isi variabel yang diperlukan pada kedua service: `DATABASE_URL`, `BOT_TOKEN`, `APP_SECRET`, `WEBAPP_URL=https://doctor-moneys.web.app`, dan `TZ=Asia/Jakarta`. `APP_SECRET` harus berupa nilai acak yang kuat dan sama pada kedua service. Tambahkan variabel `PRO_*` dan `COINGECKO_API_KEY` bila fitur tersebut digunakan. Untuk pengembangan lokal, pakai connection URL publik Railway atau tunnel; hostname `.railway.internal` hanya dapat diakses dari jaringan Railway.
 5. Salin domain publik API Railway ke `API_BASE_URL` pada `frontend/dashboard.html` (tanpa garis miring di akhir). Pastikan `WEBAPP_URL` pada service API sama dengan origin Firebase Hosting agar CORS mengizinkan dashboard.
 6. Deploy frontend ke Firebase Hosting:
 
@@ -74,7 +74,7 @@ Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menj
 firebase deploy --only hosting
 ```
 
-Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim permintaan `/api/*` langsung ke API Railway. API dan bot berbagi akun, state, serta data lewat Supabase. Jika domain API atau Firebase berubah, perbarui `API_BASE_URL`/`WEBAPP_URL` lalu deploy ulang frontend bila `API_BASE_URL` berubah.
+Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim permintaan `/api/*` langsung ke API Railway. API dan bot berbagi akun, state, serta data lewat Railway Postgres. Jika domain API atau Firebase berubah, perbarui `API_BASE_URL`/`WEBAPP_URL` lalu deploy ulang frontend bila `API_BASE_URL` berubah. Jika lebih nyaman memakai Supabase, set `DATABASE_URL` ke URL Postgres Supabase dengan format `postgresql+psycopg://...` dan `sslmode=require` seperti yang ditunjukkan di `.env.example`.
 
 Gunakan `MODE=webhook` hanya jika Anda memang mengatur webhook. Dalam mode itu, `WEBHOOK_URL` harus menunjuk ke domain publik service bot yang menjalankan `bot.main`, bukan otomatis domain API.
 
