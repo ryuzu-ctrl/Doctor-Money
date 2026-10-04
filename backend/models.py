@@ -1,5 +1,9 @@
+import logging
+import os
+import time
 from datetime import datetime
 
+from sqlalchemy.exc import OperationalError
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,8 +41,23 @@ class PairCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
+def _wait_for_database() -> None:
+    # Jaringan private Railway (*.railway.internal) bisa belum siap beberapa detik setelah container start.
+    attempts = int(os.getenv("DB_CONNECT_ATTEMPTS", "30"))
+    for attempt in range(1, attempts + 1):
+        try:
+            with engine.connect():
+                return
+        except OperationalError as exc:
+            if attempt == attempts:
+                raise
+            logging.getLogger("doctor_money").warning("Database belum terjangkau (percobaan %s/%s): %s", attempt, attempts, str(exc).splitlines()[0])
+            time.sleep(2)
+
+
 def init_db() -> None:
     """Buat tabel; di PostgreSQL perlebar kolom telegram_id lama ke BIGINT (ID Telegram > 2^31)."""
+    _wait_for_database()
     Base.metadata.create_all(bind=engine)
     if engine.dialect.name == "postgresql":
         with engine.begin() as conn:
