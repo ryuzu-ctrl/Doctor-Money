@@ -124,6 +124,33 @@ button{font-family:inherit}
 .st.good{color:var(--good)}.st.warn{color:var(--warn)}.st.bad{color:var(--bad)}.st.mute{color:var(--faint)}
 .ring text{fill:var(--fg);font:700 12.5px var(--display)}
 .ring{flex:none}
+.diagnoses{display:flex;flex-direction:column;gap:10px}
+.diagnosis{padding:13px;border-radius:17px;background:rgba(0,0,0,.16);border:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px}
+.diagnosis-head{display:flex;align-items:center;gap:8px;font-weight:700}
+.diagnosis-head .ic{color:var(--accent)}
+.diagnosis p{margin:0;font-size:12.5px;color:var(--muted)}
+.diagnosis p b{color:var(--fg)}
+.diagnosis .dx-action{color:var(--good)}
+.money-flow{gap:14px;background:linear-gradient(145deg,rgba(79,227,230,.12),rgba(255,255,255,.035) 55%,rgba(124,92,255,.1))}
+.flow-total{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:14px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid var(--line-soft)}
+.flow-total span{display:block;font-size:12px;color:var(--muted)}
+.flow-total b{display:block;margin-top:3px;font:700 23px/1.15 var(--display);font-variant-numeric:tabular-nums}
+.flow-out{text-align:right}
+.flow-list{display:flex;flex-direction:column;gap:12px}
+.flow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.flow-label{display:flex;align-items:center;gap:9px;min-width:0}
+.flow-emoji{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--c) 15%,transparent);font-size:17px}
+.flow-label b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.flow-label small{display:block;color:var(--muted);font-size:11.5px}
+.flow-amount{text-align:right;font:600 13px var(--display);font-variant-numeric:tabular-nums}
+.flow-bar{grid-column:1/-1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.flow-bar i{display:block;height:100%;width:var(--w);border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 68%,#fff),var(--c))}
+.flow-insight{padding:12px;border-radius:15px;background:rgba(79,227,230,.09);border:1px solid rgba(79,227,230,.17);font-size:12.5px;color:var(--muted)}
+.flow-insight b{color:var(--fg)}
+.flow-left{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:12px;border-top:1px solid var(--line-soft)}
+.flow-left span{font-size:12.5px;color:var(--muted)}
+.flow-left b{font:700 15px var(--display);font-variant-numeric:tabular-nums}
+.flow-left.negative b{color:var(--bad)}
 
 /* chart */
 .readout{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -543,7 +570,7 @@ var legacyState=load();
 var requestedPlan=new URLSearchParams(window.location.search).get('plan');
 if(!['monthly','six_months','annual'].includes(requestedPlan))requestedPlan='';
 var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null});
-var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false;
+var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,accountEmail='',authMode='login',authMessage='',authBusy=false,resetEmail='',resetMethod='email',syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false;
 function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
 function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
 function apiRequest(path,options){options=options||{};options.headers=Object.assign({'Content-Type':'application/json'},options.headers||{});if(apiToken)options.headers.Authorization='Bearer '+apiToken;return fetch(API_BASE_URL+path,options).then(async function(response){var body={};try{body=await response.json();}catch(e){}if(!response.ok){var error=new Error(body.detail||'Layanan data belum tersedia');error.status=response.status;throw error;}return body;});}
@@ -554,15 +581,29 @@ function saveSyncBase(state){lastSynced=JSON.parse(JSON.stringify(state));try{lo
 async function writeState(state){var response=await fetch(API_BASE_URL+'/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:state,revision:serverRevision})});if(response.status===409){var remote=await apiRequest('/api/state');var merged=mergeState(lastSynced||remote.state,state,remote.state);serverRevision=remote.revision;response=await fetch(API_BASE_URL+'/api/state',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiToken},body:JSON.stringify({state:merged,revision:serverRevision})});if(!response.ok)throw new Error('Perubahan dari perangkat lain belum tersinkron');var result=await response.json();serverRevision=result.revision;saveSyncBase(merged);if(JSON.stringify(merged)!==JSON.stringify(state)){adoptState(merged);render();}return;}if(!response.ok)throw new Error('Data belum tersinkron');var saved=await response.json();serverRevision=saved.revision;saveSyncBase(state);}
 function persist(){var snapshot=stateSnapshot();try{localStorage.setItem(KEY,JSON.stringify(snapshot));}catch(e){}if(apiReady){syncQueue=syncQueue.then(function(){return writeState(snapshot);}).catch(function(){if(!syncErrorShown){syncErrorShown=true;toast('Data tersimpan di perangkat, tetapi belum tersinkron ke server.');}});}}
 function migrationHTML(){if(!migration)return '';var state=migration.state||{},txs=(state.txs||[]).slice(0,5),items=txs.map(function(tx){return '<li class="tx"><div class="tx-m"><b>'+esc(tx.desc||'Transaksi')+'</b><span>'+esc(tx.date||'')+' · '+esc((CAT[tx.cat]||CAT.lain).n)+' · '+(tx.type==='in'?'+':'−')+rpw(tx.amt||0)+'</span></div></li>';}).join('');var wallets=(state.wallets||[]).map(function(w){return '<li>'+esc(w.n||'Dompet')+' · saldo awal '+rpw(w.start||0)+'</li>';}).join('');var budgets=Object.keys(state.budgets||{}).map(function(k){return '<li>'+esc((CAT[k]||CAT.lain).n)+' · '+rpw(state.budgets[k])+'</li>';}).join('');var goals=(state.goals||[]).map(function(g){return '<li>'+esc(g.n||'Tujuan')+' · '+rpw(g.s||0)+' dari '+rpw(g.t||0)+'</li>';}).join('');var title=migration.mode==='existing'?'Dua sumber data ditemukan':'Data lama ditemukan';var intro=migration.mode==='existing'?'Akun server sudah berisi data. Impor otomatis dihentikan agar tidak menimpa atau mencampur saldo secara ambigu. Data browser ditampilkan di bawah.':'Tinjau data browser sebelum impor. Nilai bawaan/contoh akan dilewati.';var buttons=migration.mode==='existing'?'<button type="button" class="btn primary" data-act="useServerState">Gunakan akun server</button><button type="button" class="btn" data-act="useLocalState">Tetap gunakan data browser</button>':'<button type="button" class="btn primary" data-act="importLegacy">Impor data saya</button><button type="button" class="btn" data-act="discardLegacy">Gunakan akun kosong</button>';return '<section class="panel glass" aria-label="Impor data lama"><div class="panel-h"><h2>'+title+'</h2><span class="aside">Tinjau sebelum lanjut</span></div><p class="aside">'+intro+'<br>'+migration.imported_transactions+' transaksi, '+migration.wallets+' dompet, '+migration.budgets+' budget, dan '+migration.goals+' tujuan ditemukan; '+migration.skipped_sample_items+' nilai bawaan/contoh akan dilewati.</p>'+(items?'<ul class="txs">'+items+'</ul>':'<p class="aside">Tidak ada transaksi personal yang terdeteksi.</p>')+(wallets?'<div class="aside">Dompet:<ul>'+wallets+'</ul></div>':'')+(budgets?'<div class="aside">Budget:<ul>'+budgets+'</ul></div>':'')+(goals?'<div class="aside">Tujuan:<ul>'+goals+'</ul></div>':'')+'<div class="g-act">'+buttons+'</div></section>';}
+function authHTML(){
+  if(authMode==='reset-request')return '<section class="panel glass" aria-labelledby="auth-title"><span class="eyebrow">Pemulihan akun</span><h1 class="ttl" id="auth-title">Reset kata sandi</h1><p class="aside">Pilih cara verifikasi. Metode Telegram hanya tersedia jika akun sudah ditautkan ke bot.</p><form class="stack" data-form="password-reset-request"><div><label class="lbl" for="resetEmail">Email akun</label><input class="field" id="resetEmail" type="email" inputmode="email" autocomplete="email" maxlength="320" required value="'+esc(resetEmail)+'"></div><div><label class="lbl" for="resetMethod">Kirim kode melalui</label><select class="field" id="resetMethod"><option value="email"'+(resetMethod==='email'?' selected':'')+'>Email</option><option value="telegram"'+(resetMethod==='telegram'?' selected':'')+'>Bot Telegram tertaut</option></select></div><p class="aside" role="status" aria-live="polite">'+esc(authMessage)+'</p><button type="submit" class="btn primary"'+(authBusy?' disabled':'')+'>'+(authBusy?'Mengirim…':'Kirim kode verifikasi')+'</button></form><button type="button" class="linkbtn" data-act="authLogin">Kembali ke masuk</button></section>';
+  if(authMode==='reset-confirm')return '<section class="panel glass" aria-labelledby="auth-title"><span class="eyebrow">Verifikasi reset</span><h1 class="ttl" id="auth-title">Buat kata sandi baru</h1><p class="aside">Masukkan kode yang dikirim melalui '+(resetMethod==='email'?'email':'chat bot Telegram')+'. Kode berlaku 10 menit, sekali pakai, dan maksimal 5 percobaan.</p><form class="stack" data-form="password-reset-confirm"><div><label class="lbl" for="resetCode">Kode 8 angka</label><input class="field" id="resetCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" required></div><div><label class="lbl" for="resetNewPassword">Kata sandi baru (minimal 12 karakter)</label><input class="field" id="resetNewPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></div><p class="aside" role="status" aria-live="polite">'+esc(authMessage)+'</p><button type="submit" class="btn primary"'+(authBusy?' disabled':'')+'>'+(authBusy?'Memproses…':'Simpan kata sandi baru')+'</button></form><button type="button" class="linkbtn" data-act="resetAgain">Kirim kode baru</button><button type="button" class="linkbtn" data-act="authLogin">Kembali ke masuk</button></section>';
+  var registering=authMode==='signup';
+  return '<section class="panel glass" aria-labelledby="auth-title"><span class="eyebrow">Doctor Money</span><h1 class="ttl" id="auth-title">'+(registering?'Buat akun':'Masuk ke akun')+'</h1><p class="aside">'+(registering?'Buat akun dengan email dan kata sandi untuk menyimpan data keuangan Anda.':'Masuk untuk melanjutkan ke dashboard dan data keuangan Anda.')+'</p><form class="stack" data-form="auth" autocomplete="on"><div><label class="lbl" for="authEmail">Email</label><input class="field" id="authEmail" name="email" type="email" inputmode="email" autocomplete="email" maxlength="320" required></div><div><label class="lbl" for="authPassword">Kata sandi'+(registering?' (minimal 12 karakter)':'')+'</label><input class="field" id="authPassword" name="password" type="password" autocomplete="'+(registering?'new-password':'current-password')+'" minlength="'+(registering?'12':'1')+'" maxlength="128" required></div><p class="aside" role="status" aria-live="polite">'+esc(authMessage)+'</p><button type="submit" class="btn primary"'+(authBusy?' disabled':'')+'>'+(authBusy?'Memproses…':registering?'Daftar dengan email':'Masuk dengan email')+'</button></form>'+(registering?'':'<button type="button" class="linkbtn" data-act="passwordReset">Lupa kata sandi?</button>')+'<button type="button" class="linkbtn" data-act="authToggle">'+(registering?'Sudah punya akun? Masuk':'Belum punya akun? Daftar')+'</button><p class="aside">Setelah masuk, buka Dompet untuk menghubungkan Telegram. Jalankan <b>/hubungkan</b> di bot, lalu masukkan kode sekali pakai yang diberikan bot.</p><p class="aside">Pendaftaran langsung aktif tanpa konfirmasi email.</p></section>';
+}
+async function registerEmail(email,password){
+  var headers={'Content-Type':'application/json'};
+  if(apiToken)headers.Authorization='Bearer '+apiToken;
+  var response=await fetch(API_BASE_URL+'/api/auth/signup',{method:'POST',headers:headers,body:JSON.stringify({email:email,password:password})});
+  var body={};try{body=await response.json();}catch(e){}
+  if(!response.ok)throw new Error(body.detail||'Akun tidak dapat dibuat');
+  return body;
+}
 async function boot(){
   var webApp=window.Telegram&&window.Telegram.WebApp;
   if(webApp){webApp.ready();webApp.expand();var theme=webApp.themeParams||{};if(theme.bg_color)document.documentElement.style.setProperty('--tg-theme-bg',theme.bg_color);if(theme.text_color)document.documentElement.style.setProperty('--tg-theme-text',theme.text_color);}
+  if(!apiToken){apiReady=false;render(false);return;}
   try{
     var remote;
-    async function createAccount(){var created=await fetch(API_BASE_URL+'/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:webApp&&webApp.initData?webApp.initData:null})});var account=await created.json();if(!created.ok)throw new Error(account.detail||'Akun tidak dapat dibuat');apiToken=account.token;localStorage.setItem(SESSION_KEY,apiToken);return {state:account.state,revision:account.revision};}
-    if(!apiToken)remote=await createAccount();
     try{proStatus=await apiRequest('/api/pro/status');}
-    catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);legacyState=load();remote=await createAccount();proStatus=await apiRequest('/api/pro/status');}
+    catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';apiReady=false;render(false);return;}
+    try{accountEmail=(await apiRequest('/api/auth/me')).email||'';}catch(error){if(error.status===401)throw error;}
     proUnavailable=false;
     if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}
     if(offlineMode){apiReady=false;render(false);return;}
@@ -581,6 +622,7 @@ async function boot(){
     window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.edit||S.editName)return;try{proStatus=await apiRequest('/api/pro/status');if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
   }catch(e){
     apiReady=false;
+    if(e.status===401){apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';render(false);return;}
     if(e.status===402){try{proStatus=await apiRequest('/api/pro/status');}catch(error){proStatus=null;}proStatus=proStatus||{status:'expired',active:false,plans:[],payment:{configured:false}};S.tab='pro';render(false);return;}
     proUnavailable=true;proStatus={status:'unavailable',active:false,plans:[],payment:{configured:false}};render(false);toast('Status Pro belum dapat diverifikasi. Coba sambungkan kembali.');
   }
@@ -606,11 +648,84 @@ function stats(ym){
 function score(st){
   if(!st.l.length)return null;
   var p1=clamp((st.sr==null?0:st.sr)/0.3,0,1)*40;
-  var p2_=st.used<=1?30:Math.max(0,30*(1-(st.used-1)*2));
+  var p2_=st.bTot>0?(st.used<=1?30:Math.max(0,30*(1-(st.used-1)*2))):15;
   var p3=clamp((st.em||0)/6,0,1)*30;
   return Math.round(p1+p2_+p3);
 }
 function scoreLabel(s){return s==null?'Belum ada data':s>=80?'Prima':s>=60?'Sehat':s>=40?'Perlu perhatian':'Kritis';}
+function periodDayLimit(ym){return ym===curYM()?new Date().getDate():new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();}
+function periodTransactions(ym,dayLimit){
+  return inM(ym).filter(function(t){return Number(t.date.slice(8,10))<=dayLimit;});
+}
+function categoryTotals(list){
+  var result={};
+  list.forEach(function(t){if(isExp(t))result[t.cat]=(result[t.cat]||0)+t.amt;});
+  return result;
+}
+function daysInYM(ym){return new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();}
+function healthBreakdown(st){
+  var savings=clamp((st.sr==null?0:st.sr)/.3,0,1)*40;
+  var budget=st.bTot>0?(st.used<=1?30:Math.max(0,30*(1-(st.used-1)*2))):15;
+  var emergency=clamp((st.em||0)/6,0,1)*30;
+  return {savings:Math.round(savings),budget:Math.round(budget),emergency:Math.round(emergency)};
+}
+function diagnosisHTML(st,sc){
+  var cards=[],dayLimit=periodDayLimit(S.ym),previousYM=shiftYM(S.ym,-1);
+  var comparisonDay=Math.min(dayLimit,daysInYM(previousYM));
+  var currentByCat=categoryTotals(periodTransactions(S.ym,comparisonDay));
+  var previousByCat=categoryTotals(periodTransactions(previousYM,comparisonDay));
+  var trend=Object.keys(currentByCat).map(function(k){
+    var current=currentByCat[k],previous=previousByCat[k]||0;
+    return {key:k,current:current,previous:previous,delta:current-previous,pct:previous>0?(current-previous)/previous:null};
+  }).filter(function(x){return x.delta>0&&x.key!=='tabungan';}).sort(function(a,b){return b.delta-a.delta;})[0];
+  if(trend&&(trend.pct==null||trend.pct>=.1)){
+    var category=CAT[trend.key]||CAT.lain,budget=S.budgets[trend.key]||0,spent=trend.current;
+    var change=trend.pct==null?'mulai tercatat sebesar '+rp(trend.current):'naik '+Math.round(trend.pct*100)+'% (bertambah '+rp(trend.delta)+')';
+    var action=budget>0?(spent>=budget?'Anggaran '+category.n+' sudah terpakai. Tunda belanja non-esensial di kategori ini sampai periode berikutnya.':'Sisa anggaran '+category.n+' '+rp(budget-spent)+'. Batasi pengeluaran berikutnya sekitar '+rp((budget-spent)/Math.max(1,daysInYM(S.ym)-dayLimit+1))+' per hari.'):'Periksa transaksi '+category.n+' terbaru, lalu tetapkan batas anggaran bulanan agar kenaikannya terkendali.';
+    cards.push('<article class="diagnosis"><div class="diagnosis-head">'+ic(category.i,18)+'<span>Perubahan pengeluaran</span></div><p>'+esc(category.n)+' '+change+' dibanding periode setara bulan lalu ('+comparisonDay+' hari pertama). Nilainya kini '+rp(trend.current)+'.</p><p class="dx-action"><b>Yang bisa dilakukan:</b> '+esc(action)+'</p></article>');
+  }
+  if(S.ym===curYM()&&dayLimit>=2){
+    var currentRows=periodTransactions(S.ym,comparisonDay),previousRows=periodTransactions(previousYM,comparisonDay);
+    var currentDeficit=sumOut(currentRows)-sumIn(currentRows),previousDeficit=sumOut(previousRows)-sumIn(previousRows);
+    var dailyBurn=currentDeficit/comparisonDay,previousBurn=previousDeficit/comparisonDay;
+    var liquid=S.wallets.reduce(function(total,w){return total+bal(w);},0);
+    if(liquid>0&&dailyBurn>0&&previousBurn>0){
+      var currentRunway=liquid/dailyBurn,previousRunway=liquid/previousBurn,daysSooner=Math.round(previousRunway-currentRunway);
+      if(daysSooner>=1){
+        cards.push('<article class="diagnosis"><div class="diagnosis-head">'+ic('gauge',18)+'<span>Perkiraan daya tahan saldo</span></div><p>Dengan defisit rata-rata '+rp(dailyBurn)+' per hari, saldo cair saat ini cukup sekitar <b>'+Math.max(1,Math.round(currentRunway))+' hari</b>—sekitar <b>'+daysSooner+' hari lebih singkat</b> daripada jika laju periode setara bulan lalu ('+rp(previousBurn)+' defisit per hari) berlanjut.</p><p class="dx-action"><b>Kenapa dan tindakan:</b> Pengeluaran saat ini melebihi pemasukan dengan laju tersebut. Tinjau kategori yang naik di atas dan kurangi belanja fleksibel untuk memperpanjang daya tahan saldo.</p></article>');
+      }
+    }
+  }
+  if(sc!=null){
+    var points=healthBreakdown(st),drivers=[];
+    drivers.push('rasio tabungan '+(st.sr==null?'belum ada pemasukan':Math.round(st.sr*100)+'%')+' ('+points.savings+'/40 poin)');
+    drivers.push(st.bTot>0?'anggaran terpakai '+Math.round(st.used*100)+'% ('+points.budget+'/30 poin)':'anggaran belum diatur (15/30 poin netral)');
+    drivers.push('dana darurat '+(st.em==null?'belum terukur':f1(st.em)+' bulan')+' ('+points.emergency+'/30 poin)');
+    var next=st.sr==null||st.sr<.2?'Naikkan sisa pemasukan setelah pengeluaran; mulai dengan mengurangi kategori yang sedang meningkat.':st.bTot===0?'Atur batas untuk kategori pengeluaran terbesar agar perubahan bulan depan bisa dipantau.':st.used>1?'Kurangi pengeluaran pada anggaran yang terlampaui.':st.em!=null&&st.em<6?'Sisihkan sebagian surplus rutin untuk menambah dana darurat menuju target 6 bulan.':'Pertahankan rasio tabungan dan evaluasi anggaran tiap minggu.';
+    cards.push('<article class="diagnosis"><div class="diagnosis-head">'+ic('pulse',18)+'<span>Kondisi keuangan: '+esc(scoreLabel(sc))+' '+sc+'/100</span></div><p>Skor dihitung dari rasio tabungan ('+drivers[0]+'), pemakaian anggaran ('+drivers[1]+'), dan dana darurat ('+drivers[2]+'). Ini menjelaskan faktor di balik skor, bukan penilaian kredit.</p><p class="dx-action"><b>Fokus berikutnya:</b> '+esc(next)+'</p></article>');
+  }
+  if(!cards.length)return '<section class="panel glass" aria-labelledby="h-diagnosis"><div class="panel-h"><h2 id="h-diagnosis">Diagnosis keuangan</h2><span class="aside">Pola bulan ini</span></div><div class="empty"><b>Belum cukup pola untuk diagnosis</b>Catat transaksi dan atur anggaran supaya Doctor Money dapat membandingkan periode yang setara.</div></section>';
+  return '<section class="panel glass" aria-labelledby="h-diagnosis"><div class="panel-h"><h2 id="h-diagnosis">Diagnosis keuangan</h2><span class="aside">Pola bulan ini</span></div><div class="diagnoses">'+cards.join('')+'</div><span class="aside">Analisis otomatis berdasarkan transaksi dan anggaran tersimpan. Bukan nasihat keuangan profesional.</span></section>';
+}
+function moneyFlowHTML(st){
+  var keys=Object.keys(st.byCat).filter(function(k){return st.byCat[k]>0;}).sort(function(a,b){return st.byCat[b]-st.byCat[a];});
+  var total=st.exp,hasActivity=st.inc>0||total>0;
+  var colors={makan:'#FFB86B',tagihan:'#7C8CFF',transport:'#6CB6FF',hiburan:'#FF8FB1',belanja:'#E39BFF',kesehatan:'#5FE3B4',pendidikan:'#F5D76E',lain:'#9FB0C8',lain_in:'#9FB0C8'};
+  var emojis={makan:'🍔',tagihan:'🏠',transport:'🚗',hiburan:'🎮',belanja:'🛒',kesehatan:'🩺',pendidikan:'📚',lain:'✨'};
+  var fmt=function(value){return S.hide?'••••••':rpw(value);};
+  var leftover=st.net,positive=leftover>=0,top=keys.slice(0,2),topAmount=top.reduce(function(sum,k){return sum+st.byCat[k];},0);
+  var insight=total>0&&top.length
+    ?'<div class="flow-insight">'+(top.length===1?'Kategori <b>'+esc((CAT[top[0]]||CAT.lain).n)+'</b> menyumbang <b>'+Math.round(topAmount/total*100)+'%</b> dari total pengeluaranmu.':'<b>'+esc((CAT[top[0]]||CAT.lain).n)+' + '+esc((CAT[top[1]]||CAT.lain).n)+'</b> menyumbang <b>'+Math.round(topAmount/total*100)+'%</b> dari total pengeluaranmu.')+(st.inc>0?' Setara '+Math.round(topAmount/st.inc*100)+'% dari pemasukan.':'')+'</div>'
+    :'<div class="flow-insight">'+(hasActivity?'Belum ada pengeluaran tercatat bulan ini.':'Catat pemasukan dan pengeluaran untuk melihat ke mana uangmu pergi.')+'</div>';
+  var rows=keys.map(function(k){
+    var category=CAT[k]||CAT.lain,value=st.byCat[k],share=total>0?value/total*100:0,color=colors[k]||category.c||'#9FB0C8';
+    return '<div class="flow-row" style="--c:'+color+'"><div class="flow-label"><span class="flow-emoji" aria-hidden="true">'+(emojis[k]||'🧾')+'</span><span><b>'+esc(category.n)+'</b><small>'+share.toLocaleString('id-ID',{maximumFractionDigits:1})+'% dari pengeluaran</small></span></div><b class="flow-amount">'+fmt(value)+'</b><div class="flow-bar" aria-hidden="true"><i style="--w:'+Math.max(2,share)+'%"></i></div></div>';
+  }).join('');
+  return '<section class="panel glass money-flow" aria-labelledby="h-flow"><div class="panel-h"><h2 id="h-flow">Ke mana uang saya?</h2><span class="aside">'+ymShort(S.ym)+' · Semua nominal dalam Rupiah</span></div>'+
+    '<div class="flow-total"><div><span>Total pemasukan</span><b>'+(S.hide?'••••••':rpw(st.inc))+'</b></div><div class="flow-out"><span>Total pengeluaran</span><b>'+(S.hide?'••••••':rpw(total))+'</b></div></div>'+
+    (rows?'<div class="flow-list">'+rows+'</div>':'<div class="empty"><b>Belum ada pengeluaran</b>Pengeluaran yang dicatat akan diringkas di sini.</div>')+insight+
+    '<div class="flow-left'+(positive?'':' negative')+'"><span>'+(positive?'Sisa arus kas':'Defisit arus kas')+'<small style="display:block;margin-top:2px">Pemasukan dikurangi pengeluaran tercatat; bukan saldo tabungan aktual.</small></span><b>'+(S.hide?'••••••':(positive?'+':'−')+rpw(leftover))+'</b></div></section>';
+}
 function cumNet(ym){
   var isC=ym===curYM(),last=isC?new Date().getDate():new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();
   var arr=[],run=0,l=inM(ym);
@@ -640,6 +755,7 @@ function wname(id){var w=S.wallets.filter(function(x){return x.id===id;})[0];ret
 /* ---------- assets: crypto, saham, lainnya ---------- */
 /* Crypto dihargai otomatis lewat CoinGecko. Saham dan aset lain memakai harga terkini yang diisi manual. Saham disimpan dalam lembar (1 lot = 100 lembar). */
 var MARKET_KEY='doctor-money:market:v1';
+var YAHOO_MARKET_KEY='doctor-money:yahoo-market:v1';
 var CG='https://api.coingecko.com/api/v3';
 var KIND={crypto:{n:'Crypto',c:'#FFC857',i:'coin'},stock:{n:'Saham',c:'#6CB6FF',i:'chart'},other:{n:'Lainnya',c:'#C79BFF',i:'layers'}};
 var AK={
@@ -649,6 +765,8 @@ var AK={
 };
 var M={top:[],prices:{},ids:{},at:0,next:0,loading:false,err:false};
 try{var mc=JSON.parse(localStorage.getItem(MARKET_KEY));if(mc&&mc.prices){M.top=mc.top||[];M.prices=mc.prices;M.ids=mc.ids||{};M.at=mc.at||0;}}catch(e){}
+var YM={stocks:[],commodities:[],stocksMonitored:0,stocksAt:0,commoditiesAt:0,at:0,next:0,loading:false,err:false};
+try{var yc=JSON.parse(localStorage.getItem(YAHOO_MARKET_KEY));if(yc){YM.stocks=yc.stocks||[];YM.commodities=yc.commodities||[];YM.stocksMonitored=yc.stocksMonitored||0;YM.stocksAt=yc.stocksAt||0;YM.commoditiesAt=yc.commoditiesAt||0;YM.at=yc.at||0;}}catch(e){}
 function parseNum(t){
   t=String(t).trim().replace(/\s/g,'').replace(/^rp\.?/i,'');
   if(!/^\d[\d.,]*$/.test(t))return null;
@@ -714,6 +832,29 @@ async function loadMarket(force){
   }catch(e){M.err=true;}
   M.loading=false;M.next=Date.now()+60000;
   if((S.tab==='aset'||S.tab==='home')&&!S.edit&&!S.editName)render();
+}
+async function loadYahooMarket(force){
+  if(YM.loading||(!force&&Date.now()<YM.next))return;
+  YM.loading=true;
+  try{
+    var quotes=await apiRequest('/api/market/assets');
+    YM.stocks=quotes.stocks||[];YM.commodities=quotes.commodities||[];YM.stocksMonitored=quotes.stocks_monitored||0;YM.stocksAt=quotes.stocks_as_of||0;YM.commoditiesAt=quotes.commodities_as_of||0;YM.at=Date.now();YM.err=false;
+    try{localStorage.setItem(YAHOO_MARKET_KEY,JSON.stringify({stocks:YM.stocks,commodities:YM.commodities,stocksMonitored:YM.stocksMonitored,stocksAt:YM.stocksAt,commoditiesAt:YM.commoditiesAt,at:YM.at}));}catch(e){}
+  }catch(e){YM.err=true;}
+  YM.loading=false;YM.next=Date.now()+60000;
+  if(S.tab==='aset'&&!S.edit&&!S.editName)render();
+}
+function refreshMarkets(){loadMarket(true);loadYahooMarket(true);render();}
+function quoteRows(items){
+  if(!items.length)return '<div class="empty"><b>'+(YM.loading?'Memuat harga…':'Harga belum tersedia')+'</b>'+(YM.loading?'':'Sumber data sedang tidak tersedia. Coba muat ulang.')+'</div>';
+  return '<ul class="txs">'+items.map(function(q,i){
+    var price=q.currency==='IDR'?rpx(q.price):'US$ '+Number(q.price).toLocaleString('en-US',{maximumFractionDigits:3});
+    var volume=q.volume==null?'':'<span>Volume '+Number(q.volume).toLocaleString('id-ID')+' lembar</span>';
+    return '<li class="tx"><span class="rank">'+(i+1)+'</span><div class="tx-m"><b>'+esc(q.name)+'</b><span>'+esc(q.symbol)+' · '+esc(q.currency)+' '+esc(q.unit)+'</span>'+volume+'</div><div class="h-val"><b>'+price+'</b>'+(q.change_pct==null?'':'<span class="pl '+(q.change_pct<0?'dn':'up')+'">'+pct(q.change_pct)+' · harian</span>')+'</div></li>';
+  }).join('')+'</ul>';
+}
+function quoteTime(ts){
+  return ts?new Date(ts*1000).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Jakarta'}):'belum tersedia';
 }
 
 /* ---------- small drawing helpers ---------- */
@@ -861,8 +1002,12 @@ var VIEWS={
   '<section class="panel glass" aria-labelledby="h-hold"><div class="panel-h"><h2 id="h-hold">Aset Saya</h2><button type="button" class="linkbtn" data-act="aadd" data-arg="'+kindArg+'">+ Catat aset</button></div>'+
    (shown.length?shown.map(holdingRow).join(''):'<div class="empty"><b>'+(list.length?'Belum ada aset di kelompok ini':'Belum ada aset tercatat')+'</b>Catat kode, jumlah, dan harga beli untuk melihat nilai terkini serta untung atau ruginya.</div>')+
    '<span class="aside">Ketuk aset untuk mengubah jumlah atau menghapusnya. Harga saham dan aset lain diisi manual, harga crypto diperbarui otomatis.</span></section>'+
-  '<section class="panel glass" aria-labelledby="h-mk"><div class="panel-h"><h2 id="h-mk">Pasar Crypto</h2><button type="button" class="linkbtn" data-act="mrefresh"'+(M.loading?' disabled':'')+'>'+(M.loading?'Memuat…':'Muat ulang')+'</button></div>'+market+
+  '<section class="panel glass" aria-labelledby="h-mk"><div class="panel-h"><h2 id="h-mk">Pasar Crypto</h2><button type="button" class="linkbtn" data-act="mrefresh"'+(M.loading||YM.loading?' disabled':'')+'>'+(M.loading||YM.loading?'Memuat…':'Muat ulang pasar')+'</button></div>'+market+
    '<span class="aside">'+(M.at?'Sumber: CoinGecko · diperbarui '+tlabel(M.at)+'.':'Sumber: CoinGecko.')+(M.err&&M.top.length?' Pembaruan terakhir gagal, menampilkan data sebelumnya.':'')+'</span></section>'+
+  '<section class="panel glass" aria-labelledby="h-ms"><div class="panel-h"><h2 id="h-ms">Saham IHSG yang Sedang Tren</h2></div>'+(YM.loading&&!YM.stocks.length?'<div class="empty"><b>Memuat tren saham…</b></div>':YM.err&&!YM.stocks.length?'<div class="empty"><b>Data tren belum tersedia</b>Sumber data sedang tidak dapat dihubungi. Coba muat ulang.</div>':YM.stocks.length?quoteRows(YM.stocks):'<div class="empty"><b>Belum ada saham terpantau yang menguat</b>Belum ditemukan penguatan pada sesi bursa terakhir.</div>')+
+   '<span class="aside">Top 5 penguatan dari '+(YM.stocksMonitored||'daftar')+' saham IDX pilihan berdasarkan perubahan sesi terakhir. Volume dalam lembar. Sumber: Yahoo Finance, bukan data resmi bursa. Data per '+quoteTime(YM.stocksAt)+'.'+(YM.err&&YM.stocks.length?' Pembaruan gagal; menampilkan tren terakhir yang tersimpan.':'')+'</span></section>'+
+  '<section class="panel glass" aria-labelledby="h-mc"><div class="panel-h"><h2 id="h-mc">Pasar Komoditas</h2></div>'+quoteRows(YM.commodities)+
+   '<span class="aside">Kontrak futures dalam USD sesuai unit masing-masing; bukan harga eceran lokal. Sumber: Yahoo Finance.'+(YM.commoditiesAt?' Data per '+quoteTime(YM.commoditiesAt)+'.':'')+(YM.err&&YM.commodities.length?' Pembaruan gagal; menampilkan data terakhir yang tersimpan.':'')+'</span></section>'+
   '<p class="foot">Informasi ini bukan saran investasi.</p>';
  },
 
@@ -886,6 +1031,8 @@ var VIEWS={
    '<div class="score">'+ring(sc==null?0:sc,66,6,sc==null?'–':String(sc),scCol,'Skor kesehatan keuangan '+(sc==null?'belum ada':sc))+'<small>'+scoreLabel(sc)+'</small></div></div>'+
    '<div class="io"><div class="in"><span class="ico">'+ic('down',16)+'</span><div><span>Pemasukan</span><b>'+rpw(s.inc)+'</b></div></div><div class="out"><span class="ico">'+ic('up',16)+'</span><div><span>Pengeluaran</span><b>'+rpw(s.exp)+'</b></div></div></div></section>'+
   '<section class="rx glass sub"><span class="rx-ic">'+ic('pulse',20)+'</span><div><span class="eyebrow">Resep hari ini</span><p>'+esc(tip(s))+'</p></div></section>'+
+  moneyFlowHTML(s)+
+  diagnosisHTML(s,sc)+
   assetCard()+
   '<section class="panel glass" aria-labelledby="h-bill"><div class="panel-h"><h2 id="h-bill">Tagihan Mendatang</h2><span class="aside">'+(bl.length?bl.length+' belum dibayar':'Lunas')+'</span></div>'+
    (billRows||'<div class="done sub">'+ic('check',20)+'Semua tagihan bulan ini sudah dibayar</div>')+'</section>'+
@@ -942,8 +1089,11 @@ var VIEWS={
   return topbar()+'<div><h1 class="ttl">Dompet</h1></div>'+
   '<section class="panel glass" aria-label="Total saldo"><span class="eyebrow">Total semua dompet</span><div class="big-num">'+(sumAll<0?'−':'')+rp(sumAll)+'</div><div class="alloc" aria-hidden="true">'+S.wallets.map(function(w){var b=Math.max(0,bal(w));return b>0?'<i style="flex:'+b+';background:'+w.c+'"></i>':'';}).join('')+'</div></section>'+
   '<section class="panel glass" aria-labelledby="h-w"><div class="panel-h"><h2 id="h-w">Daftar Dompet</h2><span class="aside">Ketuk untuk ubah saldo awal</span></div>'+cards+'</section>'+
+  '<section class="panel glass" aria-labelledby="h-account"><div class="panel-h"><h2 id="h-account">Akun</h2></div>'+
+   (accountEmail?'<span class="aside">'+esc(accountEmail)+'</span>':'<p class="aside">Akun lama ini belum memiliki login email. Tambahkan email dan kata sandi agar bisa masuk kembali di perangkat lain.</p><form class="stack" data-form="auth-upgrade"><div><label class="lbl" for="upgradeEmail">Email</label><input class="field" id="upgradeEmail" type="email" inputmode="email" maxlength="320" required></div><div><label class="lbl" for="upgradePassword">Kata sandi (minimal 12 karakter)</label><input class="field" id="upgradePassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div><button type="submit" class="btn primary">Tambah login email</button></form>')+
+   '<button type="button" class="btn" data-act="logout">Keluar dari akun</button></section>'+
   '<section class="panel glass" aria-labelledby="h-link"><div class="panel-h"><h2 id="h-link">Hubungkan Telegram</h2><span class="aside">'+(offlineMode?'Mode lokal':linkedTelegram?'Terhubung':'Belum terhubung')+'</span></div>'+
-   (offlineMode?'<p class="aside">Perubahan hanya tersimpan di browser ini dan tidak disinkronkan ke bot.</p><button type="button" class="btn primary" data-act="reconnect">Sambungkan ke akun server</button>':linkedTelegram?'<button type="button" class="btn" data-act="unlinkTelegram">Putuskan akun</button>':'<form class="row2" data-form="telegram-link"><div><label class="lbl" for="linkCode">Kode dari bot (8 angka)</label><input class="field" id="linkCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div><button type="submit" class="btn primary">Hubungkan</button></form>')+'</section>'+
+   (!accountEmail?'<p class="aside">Hubungkan email terlebih dahulu. Di bot Telegram, jalankan /hubungkan lalu masukkan kode yang diberikan.</p>':offlineMode?'<p class="aside">Perubahan hanya tersimpan di browser ini dan tidak disinkronkan ke bot.</p><button type="button" class="btn primary" data-act="reconnect">Sambungkan ke akun server</button>':linkedTelegram?'<button type="button" class="btn" data-act="unlinkTelegram">Putuskan akun</button>':'<p class="aside">Jalankan <b>/hubungkan</b> di bot Doctor Money, lalu masukkan kode sekali pakai di sini. Kode berlaku 10 menit.</p><form class="row2" data-form="telegram-link"><div><label class="lbl" for="linkCode">Kode dari bot (8 angka)</label><input class="field" id="linkCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div><button type="submit" class="btn primary">Hubungkan</button></form>')+'</section>'+
   '<section class="panel glass danger-zone" aria-labelledby="h-d"><div class="panel-h"><h2 id="h-d">Data</h2><span class="aside">Tersimpan di server</span></div>'+
    '<button type="button" class="btn'+(S.armed==='sample'?' warnb':'')+'" data-act="rsample">'+(S.armed==='sample'?'Yakin? Ketuk lagi untuk memulihkan':'Pulihkan data contoh')+'</button>'+
    '<button type="button" class="btn'+(S.armed==='empty'?' warnb':'')+'" data-act="rempty">'+(S.armed==='empty'?'Yakin? Ketuk lagi untuk mengosongkan':'Mulai dari nol (kosongkan semua)')+'</button></section>';
@@ -960,7 +1110,7 @@ var VIEWS={
     var orderPayment=pending.payment||payment;
     orderPanel='<section class="panel glass pro-order" aria-label="Order pembayaran"><h2>Order '+esc(pending.order_id)+'</h2><b>'+esc(pending.plan.name)+' · '+rp(pending.amount)+'</b>'+(orderPayment.configured?'<p class="pro-note">Transfer ke '+esc(orderPayment.method)+' · '+esc(orderPayment.account)+'<br>Atas nama '+esc(orderPayment.account_name)+'. Setelah transfer, hubungi admin dan sertakan kode order.</p>':'<p class="pro-note">Instruksi rekening belum dikonfigurasi. Hubungi admin Telegram dan sertakan kode order ini.</p>')+'<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a><button type="button" class="btn primary" data-act="procheck">Periksa status</button></div></section>';
   }
-  return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&proStatus.active?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'');
+  return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&proStatus.active?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'')+(apiToken?'<button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'');
  }
 };
 
@@ -974,6 +1124,11 @@ function initNav(){
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
+  if(!apiToken){
+    $('.nav').hidden=true;$('#fab').hidden=true;
+    $('#view').innerHTML=authHTML();
+    sc.scrollTop=0;return;
+  }
   if(!proStatus||proUnavailable){
     $('.nav').hidden=true;$('#fab').hidden=true;
     $('#view').innerHTML=proStatus?VIEWS.pro():'<div class="empty">Memeriksa status Doctor Money Pro…</div>';
@@ -989,6 +1144,7 @@ function render(keep){
   $$('.nav [data-act="tab"]').forEach(function(b){if(b.dataset.arg===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   $('#fab').setAttribute('aria-label',S.tab==='aset'?'Catat aset':'Tambah transaksi');
   if(S.tab==='aset'||(S.tab==='home'&&(S.portfolio||[]).length))loadMarket();
+  if(S.tab==='aset')loadYahooMarket();
   sc.scrollTop=y;
   var f=null;
   if(S.editName)f=$('#nameIn');else if(S.edit)f=$('#edit-in');
@@ -1153,6 +1309,20 @@ async function refreshProStatus(){
 }
 var ACT={
  tab:function(g){S.tab=g;S.edit=null;S.armed=null;render(false);},
+ authToggle:function(){authMode=authMode==='login'?'signup':'login';authMessage='';render(false);},
+ authLogin:function(){authMode='login';authMessage='';render(false);},
+ passwordReset:function(){authMode='reset-request';resetEmail='';resetMethod='email';authMessage='';render(false);},
+ resetAgain:function(){authMode='reset-request';authMessage='';render(false);},
+ logout:async function(){
+  try{
+   if(offlineMode)throw new Error('Sambungkan kembali ke server sebelum keluar agar perubahan lokal tidak hilang.');
+   if(apiReady){await syncQueue;await writeState(stateSnapshot());}
+   await apiRequest('/api/auth/logout',{method:'POST'});
+   apiToken='';apiReady=false;offlineMode=false;accountEmail='';linkedTelegram=false;proStatus=null;proUnavailable=false;authMode='login';authMessage='';legacyState=null;
+   [SESSION_KEY,KEY,BASE_KEY,OFFLINE_KEY].forEach(function(key){localStorage.removeItem(key);});
+   render(false);
+  }catch(error){toast(error.message||'Tidak dapat keluar dari akun.');}
+ },
  proplans:function(){S.tab='pro';render(false);},
  prohome:function(){S.tab='home';render(false);},
  proorder:function(g){createProOrder(g);},
@@ -1169,7 +1339,7 @@ var ACT={
   var h=list.splice(i,1)[0];S.edit=null;persist();render();
   toast('Dihapus: '+(h.name||h.code),'Urungkan',function(){S.portfolio.splice(Math.min(i,S.portfolio.length),0,h);persist();render();});
  },
- mrefresh:function(){loadMarket(true);render();},
+ mrefresh:function(){refreshMarkets();},
  hide:function(){S.hide=!S.hide;render();},
  importLegacy:async function(){if(!migration)return;try{var result=await apiRequest('/api/import/confirm',{method:'POST',body:JSON.stringify({state:migration.state})});adoptState(migration.state);serverRevision=result.revision;lastSynced=JSON.parse(JSON.stringify(migration.state));migration=null;try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Data lama berhasil dipindahkan.');}catch(e){toast(e.message);}},
  discardLegacy:function(){if(!migration)return;try{localStorage.setItem(LEGACY_KEY,JSON.stringify(legacyState));}catch(e){}migration=null;adoptState(lastSynced);try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}render(false);toast('Akun baru siap. Cadangan data lama tetap di browser.');},
@@ -1221,6 +1391,64 @@ document.addEventListener('click',function(e){
 document.addEventListener('submit',function(e){
   e.preventDefault();var f=e.target;
   if(migration){toast('Pilih dahulu sumber data yang akan digunakan.');return;}
+  if(f.dataset.form==='password-reset-request'){
+    if(authBusy)return;
+    resetEmail=$('#resetEmail').value.trim();resetMethod=$('#resetMethod').value;
+    var resetSubmit=f.querySelector('[type="submit"]');
+    authBusy=true;resetSubmit.disabled=true;resetSubmit.textContent='Mengirim…';
+    (async function(){
+      try{
+        var response=await fetch(API_BASE_URL+'/api/auth/password-reset/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:resetEmail,method:resetMethod})});
+        var result={};try{result=await response.json();}catch(error){}
+        if(!response.ok)throw new Error(result.detail||'Tidak dapat mengirim kode verifikasi');
+        authMessage=result.message||'Jika akun dan metode verifikasi tersedia, kode akan dikirim.';
+        authMode='reset-confirm';render(false);
+      }catch(error){authMessage=error.message||'Tidak dapat mengirim kode verifikasi';render(false);}
+      finally{authBusy=false;}
+    })();
+    return;
+  }
+  if(f.dataset.form==='password-reset-confirm'){
+    if(authBusy)return;
+    var resetCode=$('#resetCode').value.trim(),newPassword=$('#resetNewPassword').value,confirmSubmit=f.querySelector('[type="submit"]');
+    authBusy=true;confirmSubmit.disabled=true;confirmSubmit.textContent='Memproses…';
+    (async function(){
+      try{
+        var response=await fetch(API_BASE_URL+'/api/auth/password-reset/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:resetEmail,method:resetMethod,code:resetCode,new_password:newPassword})});
+        var result={};try{result=await response.json();}catch(error){}
+        if(!response.ok)throw new Error(result.detail||'Kode tidak valid atau kedaluwarsa');
+        authMode='login';authMessage='Kata sandi berhasil diubah. Masuk kembali dengan kata sandi baru.';
+      }catch(error){authMessage=error.message||'Tidak dapat mereset kata sandi';}
+      finally{authBusy=false;render(false);}
+    })();
+    return;
+  }
+  if(f.dataset.form==='auth'){
+    if(authBusy)return;
+    var email=$('#authEmail').value.trim(),password=$('#authPassword').value,submit=f.querySelector('[type="submit"]');
+    authBusy=true;submit.disabled=true;submit.textContent='Memproses…';
+    (async function(){
+      try{
+        var result;
+        if(authMode==='signup')result=await registerEmail(email,password);
+        else{
+          var response=await fetch(API_BASE_URL+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
+          result={};try{result=await response.json();}catch(error){}
+          if(!response.ok)throw new Error(result.detail||'Tidak dapat masuk');
+        }
+        apiToken=result.token;accountEmail=result.email||'';localStorage.setItem(SESSION_KEY,apiToken);offlineMode=false;localStorage.removeItem(OFFLINE_KEY);authMessage='';
+        await boot();
+      }catch(error){authMessage=error.message||'Autentikasi gagal';render(false);}
+      finally{authBusy=false;}
+    })();
+    return;
+  }
+  if(f.dataset.form==='auth-upgrade'){
+    var upgradeEmail=$('#upgradeEmail').value.trim(),upgradePassword=$('#upgradePassword').value,upgradeSubmit=f.querySelector('[type="submit"]');
+    upgradeSubmit.disabled=true;
+    registerEmail(upgradeEmail,upgradePassword).then(function(result){apiToken=result.token;localStorage.setItem(SESSION_KEY,apiToken);accountEmail=result.email||upgradeEmail;render();toast('Login email berhasil ditambahkan.');}).catch(function(error){toast(error.message||'Tidak dapat menambahkan login email.');}).finally(function(){upgradeSubmit.disabled=false;});
+    return;
+  }
   if(f.id==='addForm'){saveSheet();return;}
   if(f.id==='assetForm'){saveAsset();return;}
   if(f.dataset.form==='asset'){
@@ -1267,7 +1495,7 @@ function pickDay(e){
 document.addEventListener('pointermove',pickDay);
 document.addEventListener('pointerdown',pickDay);
 
-window.setInterval(function(){if(S.tab==='aset'&&!document.hidden)loadMarket();},60000);
+window.setInterval(function(){if(S.tab==='aset'&&!document.hidden){loadMarket();loadYahooMarket();}},60000);
 
 initNav();
 $('#view').innerHTML='<div class="empty">Menghubungkan ke penyimpanan Doctor Money…</div>';

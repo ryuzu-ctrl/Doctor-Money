@@ -12,8 +12,8 @@ os.environ["WEBAPP_URL"] = "https://doctor-money.example.web.app"
 
 from backend.app import app
 from backend.database import SessionLocal, engine
-from backend.models import ProAccess
-from backend.repository import account_for_token, now_utc
+from backend.models import Account, PasswordReset, ProAccess
+from backend.repository import account_for_token, make_pair_code, now_utc
 
 
 @pytest.fixture
@@ -60,6 +60,309 @@ def test_firebase_hosting_origin_is_allowed_for_api_requests(client):
         },
     )
     assert blocked.status_code == 400
+
+
+def test_email_signup_login_logout_and_existing_account_upgrade(client):
+    old_token, state = account(client)
+    state["name"] = "Email User"
+    saved = client.put(
+        "/api/state",
+        headers={"Authorization": "Bearer " + old_token},
+        json={"state": state, "revision": 0},
+    )
+    assert saved.status_code == 200
+
+    upgraded = client.post(
+        "/api/auth/signup",
+        headers={"Authorization": "Bearer " + old_token},
+        json={"email": " User@Example.com ", "password": "a-long-test-password"},
+    )
+    assert upgraded.status_code == 200
+    result = upgraded.json()
+    assert result["email"] == "user@example.com"
+    assert result["state"]["name"] == "Email User"
+    assert "password_hash" not in result
+    assert client.get("/api/state", headers={"Authorization": "Bearer " + old_token}).status_code == 401
+
+    duplicate = client.post(
+        "/api/auth/signup",
+        json={"email": "USER@example.com", "password": "another-long-password"},
+    )
+    assert duplicate.status_code == 409
+    short_password = client.post(
+        "/api/auth/signup",
+        json={"email": "short@example.com", "password": "short"},
+    )
+    assert short_password.status_code == 422
+
+    wrong_password = client.post(
+        "/api/auth/login",
+        json={"email": "USER@example.com", "password": "wrong-password"},
+    )
+    assert wrong_password.status_code == 401
+    unknown_email = client.post(
+        "/api/auth/login",
+        json={"email": "unknown@example.com", "password": "wrong-password"},
+    )
+    assert unknown_email.status_code == 401
+    assert unknown_email.json()["detail"] == wrong_password.json()["detail"]
+    login = client.post(
+        "/api/auth/login",
+        json={"email": " USER@example.com ", "password": "a-long-test-password"},
+    )
+    assert login.status_code == 200
+    login_token = login.json()["token"]
+    assert login.json()["email"] == "user@example.com"
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + login_token}).json() == {
+        "email": "user@example.com",
+        "telegram_linked": False,
+    }
+    assert client.post("/api/auth/logout", headers={"Authorization": "Bearer " + login_token}).status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + login_token}).status_code == 401
+
+
+def test_telegram_link_requires_email_and_works_for_email_account(client):
+    anonymous_token, _ = account(client)
+    blocked = client.post(
+        "/api/link",
+        headers={"Authorization": "Bearer " + anonymous_token},
+        json={"code": "00000000"},
+    )
+    assert blocked.status_code == 403
+
+    signed_up = client.post(
+        "/api/auth/signup",
+        json={"email": "telegram@example.com", "password": "a-long-test-password"},
+    )
+    assert signed_up.status_code == 200
+    token = signed_up.json()["token"]
+    with SessionLocal() as db:
+        code, _ = make_pair_code(db, 9001001)
+    connected = client.post(
+        "/api/link",
+        headers={"Authorization": "Bearer " + token},
+        json={"code": code},
+    )
+    assert connected.status_code == 200
+    assert client.get("/api/link/status", headers={"Authorization": "Bearer " + token}).json()["connected"] is True
+    reused = client.post("/api/link", headers={"Authorization": "Bearer " + token}, json={"code": code})
+    assert reused.status_code == 409
+
+
+def test_email_password_reset_preserves_financial_data_and_revokes_sessions(client, monkeypatch):
+    monkeypatch.setattr("backend.app.check_rate_limit", lambda *args, **kwargs: True)
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "reset@example.com", "password": "initial-long-password"},
+    )
+    token = signup.json()["token"]
+    state = signup.json()["state"]
+    state["name"] = "Reset Safe"
+    state["txs"] = [{"id": "tx-reset", "date": "2026-10-01", "type": "out", "amt": 1234, "cat": "makan", "desc": "Kopi", "w": "main"}]
+    saved = client.put(
+        "/api/state",
+        headers={"Authorization": "Bearer " + token},
+        json={"state": state, "revision": 0},
+    )
+    assert saved.status_code == 200
+    another_session = client.post(
+        "/api/auth/login",
+        json={"email": "reset@example.com", "password": "initial-long-password"},
+    ).json()["token"]
+
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.test")
+    monkeypatch.setenv("SMTP_FROM", "support@example.test")
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr("backend.app.send_reset_email", lambda email, code: sent.append((email, code)))
+    unknown = client.post(
+        "/api/auth/password-reset/request",
+        json={"email": "missing@example.com", "method": "email"},
+    )
+    request = client.post(
+        "/api/auth/password-reset/request",
+        json={"email": " RESET@example.com ", "method": "email"},
+    )
+    assert unknown.status_code == request.status_code == 200
+    assert unknown.json() == request.json()
+    assert sent and sent[0][0] == "reset@example.com"
+    code = sent[0][1]
+    with SessionLocal() as db:
+        account_id = db.query(Account.id).filter(Account.email == "reset@example.com").scalar()
+        challenge = db.query(PasswordReset).filter(PasswordReset.account_id == account_id).one()
+        assert challenge.code_hash != code
+
+    invalid_code = "00000000" if code != "00000000" else "00000001"
+    wrong_code = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"email": "reset@example.com", "method": "email", "code": invalid_code, "new_password": "replacement-long-password"},
+    )
+    assert wrong_code.status_code == 400
+    changed = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"email": "reset@example.com", "method": "email", "code": code, "new_password": "replacement-long-password"},
+    )
+    assert changed.status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + token}).status_code == 401
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + another_session}).status_code == 401
+
+    old_password = client.post(
+        "/api/auth/login",
+        json={"email": "reset@example.com", "password": "initial-long-password"},
+    )
+    new_password = client.post(
+        "/api/auth/login",
+        json={"email": "reset@example.com", "password": "replacement-long-password"},
+    )
+    assert old_password.status_code == 401
+    assert new_password.status_code == 200
+    state_after_reset = client.get(
+        "/api/state",
+        headers={"Authorization": "Bearer " + new_password.json()["token"]},
+    ).json()["state"]
+    assert state_after_reset["name"] == "Reset Safe"
+    assert state_after_reset["txs"] == state["txs"]
+    reused = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"email": "reset@example.com", "method": "email", "code": code, "new_password": "another-replacement-password"},
+    )
+    assert reused.status_code == 400
+
+
+def test_telegram_password_reset_requires_linked_account_and_limits_code_attempts(client, monkeypatch):
+    monkeypatch.setattr("backend.app.check_rate_limit", lambda *args, **kwargs: True)
+    monkeypatch.setenv("BOT_TOKEN", "test-bot-token")
+    sent: list[tuple[int, str]] = []
+
+    async def capture_telegram(telegram_id: int, code: str) -> None:
+        sent.append((telegram_id, code))
+
+    monkeypatch.setattr("backend.app.send_reset_telegram", capture_telegram)
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "telegram-reset@example.com", "password": "initial-long-password"},
+    )
+    token = signup.json()["token"]
+    with SessionLocal() as db:
+        code, _ = make_pair_code(db, 9001002)
+    linked = client.post(
+        "/api/link",
+        headers={"Authorization": "Bearer " + token},
+        json={"code": code},
+    )
+    assert linked.status_code == 200
+
+    requested = client.post(
+        "/api/auth/password-reset/request",
+        json={"email": "telegram-reset@example.com", "method": "telegram"},
+    )
+    assert requested.status_code == 200
+    assert sent and sent[0][0] == 9001002
+    reset_code = sent[0][1]
+    for _ in range(5):
+        invalid = client.post(
+            "/api/auth/password-reset/confirm",
+            json={"email": "telegram-reset@example.com", "method": "telegram", "code": "00000000", "new_password": "replacement-long-password"},
+        )
+        assert invalid.status_code == 400
+    exhausted = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"email": "telegram-reset@example.com", "method": "telegram", "code": reset_code, "new_password": "replacement-long-password"},
+    )
+    assert exhausted.status_code == 400
+    assert client.post(
+        "/api/auth/login",
+        json={"email": "telegram-reset@example.com", "password": "initial-long-password"},
+    ).status_code == 200
+
+
+def test_telegram_password_reset_updates_password_when_code_is_valid(client, monkeypatch):
+    monkeypatch.setattr("backend.app.check_rate_limit", lambda *args, **kwargs: True)
+    monkeypatch.setenv("BOT_TOKEN", "test-bot-token")
+    sent: list[tuple[int, str]] = []
+
+    async def capture_telegram(telegram_id: int, code: str) -> None:
+        sent.append((telegram_id, code))
+
+    monkeypatch.setattr("backend.app.send_reset_telegram", capture_telegram)
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "telegram-success@example.com", "password": "initial-long-password"},
+    )
+    token = signup.json()["token"]
+    with SessionLocal() as db:
+        code, _ = make_pair_code(db, 9001003)
+    assert client.post(
+        "/api/link",
+        headers={"Authorization": "Bearer " + token},
+        json={"code": code},
+    ).status_code == 200
+    assert client.post(
+        "/api/auth/password-reset/request",
+        json={"email": "telegram-success@example.com", "method": "telegram"},
+    ).status_code == 200
+    assert sent and sent[0][0] == 9001003
+    changed = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"email": "telegram-success@example.com", "method": "telegram", "code": sent[0][1], "new_password": "replacement-long-password"},
+    )
+    assert changed.status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + token}).status_code == 401
+    assert client.post(
+        "/api/auth/login",
+        json={"email": "telegram-success@example.com", "password": "replacement-long-password"},
+    ).status_code == 200
+
+
+def test_password_reset_delivery_failure_invalidates_code_and_returns_error(client, monkeypatch):
+    monkeypatch.setattr("backend.app.check_rate_limit", lambda *args, **kwargs: True)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.test")
+    monkeypatch.setenv("SMTP_FROM", "support@example.test")
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "smtp-failure@example.com", "password": "initial-long-password"},
+    )
+    assert signup.status_code == 200
+
+    def fail_email(email: str, code: str) -> None:
+        raise OSError("SMTP unavailable")
+
+    monkeypatch.setattr("backend.app.send_reset_email", fail_email)
+    response = client.post(
+        "/api/auth/password-reset/request",
+        json={"email": "smtp-failure@example.com", "method": "email"},
+    )
+    assert response.status_code == 503
+    with SessionLocal() as db:
+        account_id = db.query(Account.id).filter(Account.email == "smtp-failure@example.com").scalar()
+        challenge = db.query(PasswordReset).filter(PasswordReset.account_id == account_id).one()
+        assert challenge.consumed_at is not None
+
+
+def test_market_assets_endpoint_returns_yahoo_quotes_without_account_auth(client, monkeypatch):
+    async def market_quotes():
+        return {
+            "stocks": [{"symbol": "BBCA.JK", "name": "Bank Central Asia", "price": 10500, "change_pct": 5, "currency": "IDR", "unit": "per saham"}],
+            "commodities": [{"symbol": "GC=F", "name": "Emas futures", "price": 2000, "change_pct": -1, "currency": "USD", "unit": "per troy ounce"}],
+            "stocks_monitored": 30,
+            "stocks_as_of": 1790932499,
+            "commodities_as_of": 1790932499,
+        }
+
+    monkeypatch.setattr("backend.app.market.yahoo_market_data", market_quotes)
+    response = client.get("/api/market/assets")
+    assert response.status_code == 200
+    assert response.json()["stocks"][0]["symbol"] == "BBCA.JK"
+    assert response.json()["stocks_monitored"] == 30
+    assert response.json()["stocks_as_of"] == 1790932499
+    assert response.json()["commodities"][0]["currency"] == "USD"
+
+    async def unavailable():
+        raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr("backend.app.market.yahoo_market_data", unavailable)
+    failed = client.get("/api/market/assets")
+    assert failed.status_code == 503
+    assert "Yahoo Finance" in failed.json()["detail"]
 
 
 def test_state_save_conflict_and_user_isolation(client):

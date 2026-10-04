@@ -27,6 +27,14 @@ python -m bot.main
 
 Buka `http://127.0.0.1:8000/`. Tombol Telegram Mini App membutuhkan HTTPS publik, jadi untuk uji dari Telegram gunakan tunnel HTTPS tepercaya dan isi `WEBAPP_URL` dengan URL tunnel tersebut. Polling bot tidak membutuhkan webhook.
 
+Dashboard memakai akun email dan kata sandi (minimal 12 karakter) untuk mendaftar/masuk. Akun lama tanpa email dapat menambahkan kredensial di halaman Dompet; setelah masuk, hubungkan Telegram dengan menjalankan `/hubungkan` di bot lalu masukkan kode yang berlaku 10 menit. Pendaftaran langsung aktif tanpa konfirmasi email.
+
+Lupa kata sandi? Pilih **Lupa kata sandi?** pada halaman masuk untuk meminta kode sekali pakai lewat email atau chat bot Telegram yang sudah tertaut. Kode berlaku 10 menit, maksimal 5 kali percobaan, dan penggantian kata sandi akan mengeluarkan semua sesi aktif tanpa menghapus data keuangan. Untuk pengiriman lewat email, konfigurasi `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_USE_SSL`, dan `SMTP_STARTTLS` di environment server. Telegram memakai `BOT_TOKEN`; pengguna harus sudah menautkan bot ke akun dan pernah memulai chat bot. Jangan simpan kredensial SMTP di frontend atau commit `.env`.
+
+Dashboard juga menampilkan **Diagnosis keuangan** yang membandingkan pengeluaran kategori dengan periode setara bulan lalu, memperkirakan daya tahan saldo dari laju defisit, dan menjelaskan faktor skor kesehatan serta tindakan yang bisa dicoba. Skor transparan: rasio tabungan (40 poin), anggaran (30 poin), dan dana darurat (30 poin); tanpa anggaran, komponen anggaran bernilai netral 15 poin. Analisis dihitung lokal dari transaksi/dompet/anggaran yang tersimpan dan tidak mengirim data ke layanan AI eksternal. Estimasi adalah panduan sederhana, bukan nasihat profesional atau jaminan saldo masa depan.
+
+Bagian **Ke mana uang saya?** di beranda merangkum pemasukan, pengeluaran per kategori dengan proporsi visual, kategori yang paling banyak menyerap pengeluaran, dan sisa/defisit arus kas untuk bulan terpilih. Semua nominal ditampilkan dalam Rupiah (IDR). Persentase kategori dibandingkan dengan total pengeluaran (serta dibandingkan ke pemasukan sebagai konteks). Sisa arus kas berarti pemasukan dikurangi pengeluaran tercatat, bukan saldo tabungan aktual; transfer/penyetoran tabungan tidak dihitung sebagai konsumsi.
+
 Pada pengguna browser pertama, backend membuat akun kosong. Bila `localStorage` lama ditemukan, dashboard menampilkan jumlah transaksi/dompet yang akan dipindahkan dan jumlah item contoh yang dilewati. Pilih **Impor data saya** untuk menyimpan atau **Gunakan akun kosong** untuk menyimpan cadangan lokal dan mulai dengan akun server kosong. Data contoh dashboard tidak dipulihkan pada akun yang sudah tersinkron.
 
 ## Doctor Money Pro
@@ -75,8 +83,9 @@ Mini App memuat `Telegram.WebApp`, memanggil `ready()`/`expand()`, dan meneruska
 ## Data Pasar dan Batas
 
 - Top/cek crypto, watchlist, alert, dan valuasi portofolio crypto menggunakan CoinGecko; tanpa API key, kuota endpoint publik berlaku. Atur `COINGECKO_API_KEY` bila memakai paket CoinGecko yang sesuai.
+- Menu Aset menampilkan lima saham IDX pilihan dengan kenaikan harian tertinggi dari daftar pantauan 30 saham, serta futures emas, perak, minyak WTI, dan gas alam dari Yahoo Finance. Peringkat adalah pergerakan sesi terakhir, bukan pemindaian semua saham IHSG. Sumber ini tidak resmi, dapat tertunda, berubah, atau membatasi akses; harga futures dalam USD bukan harga eceran komoditas lokal. Harga pasar saham/komoditas tidak otomatis mengubah valuasi aset yang dicatat pengguna.
 - Kurs memakai Frankfurter dengan data referensi ECB. Fear & Greed memakai alternative.me. Pesan pasar menyertakan disclaimer non-saran investasi.
-- Data saham/indeks IDX belum diaktifkan dan harga emas belum diambil. Belum ada sumber gratis yang bisa saya nyatakan sekaligus andal, stabil, dan berlisensi; opsi saat ini Alpha Vantage (kuota gratis dan key), Twelve Data (kuota terbatas/berbayar), lisensi data resmi BEI, atau API harga emas berlisensi. Pilih penyedia sebelum fitur tersebut diaktifkan.
+- Data indeks IHSG serta harga emas lokal per gram belum disediakan.
 - Webhook production memerlukan reverse proxy HTTPS yang merutekan path bot terpisah dari FastAPI. Belum ada frontend untuk pengelolaan command lanjutan/portofolio saham.
 
 ## Tes

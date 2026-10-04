@@ -75,7 +75,7 @@ async def connect_account(update: Update, context: ContextTypes.DEFAULT_TYPE, ed
             markup = back_menu()
         else:
             code, expires_at = make_pair_code(db, update.effective_user.id)
-            text = f"<b>Kode pengaitan akun</b>\n<code>{code}</code>\n\nMasukkan kode ini di dashboard pada halaman Dompet → Hubungkan Telegram. Kode berlaku sampai {expires_at.strftime('%H:%M')} UTC dan hanya dapat digunakan sekali."
+            text = f"<b>Kode pengaitan akun</b>\n<code>{code}</code>\n\nMasuk atau buat akun email di dashboard, lalu masukkan kode ini pada Dompet → Hubungkan Telegram. Kode berlaku sampai {expires_at.strftime('%H:%M')} UTC dan hanya dapat digunakan sekali."
             markup = back_menu()
     if edit and update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)

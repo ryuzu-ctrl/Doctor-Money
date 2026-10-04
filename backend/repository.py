@@ -1,4 +1,6 @@
+import base64
 import hashlib
+import hmac
 import json
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -10,6 +12,11 @@ from sqlalchemy.orm import Session
 from .models import Account, ApiToken, PairCode
 from bot.services.finance import empty_state
 
+PASSWORD_SCRYPT_N = 2**15
+PASSWORD_SCRYPT_R = 8
+PASSWORD_SCRYPT_P = 1
+PASSWORD_SCRYPT_MAXMEM = 64 * 1024 * 1024
+
 
 def now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -17,6 +24,52 @@ def now_utc() -> datetime:
 
 def hash_secret(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(
+        password.encode("utf-8"),
+        salt=salt,
+        n=PASSWORD_SCRYPT_N,
+        r=PASSWORD_SCRYPT_R,
+        p=PASSWORD_SCRYPT_P,
+        dklen=64,
+        maxmem=PASSWORD_SCRYPT_MAXMEM,
+    )
+    return "$".join((
+        "scrypt",
+        str(PASSWORD_SCRYPT_N),
+        str(PASSWORD_SCRYPT_R),
+        str(PASSWORD_SCRYPT_P),
+        base64.urlsafe_b64encode(salt).decode("ascii"),
+        base64.urlsafe_b64encode(digest).decode("ascii"),
+    ))
+
+
+def verify_password(password: str, encoded: str | None) -> bool:
+    if encoded is None:
+        return False
+    try:
+        algorithm, n, r, p, salt_text, digest_text = encoded.split("$")
+        if algorithm != "scrypt" or (int(n), int(r), int(p)) != (PASSWORD_SCRYPT_N, PASSWORD_SCRYPT_R, PASSWORD_SCRYPT_P):
+            return False
+        salt = base64.urlsafe_b64decode(salt_text.encode("ascii"))
+        expected = base64.urlsafe_b64decode(digest_text.encode("ascii"))
+        if len(salt) != 16 or len(expected) != 64:
+            return False
+        actual = hashlib.scrypt(
+            password.encode("utf-8"),
+            salt=salt,
+            n=PASSWORD_SCRYPT_N,
+            r=PASSWORD_SCRYPT_R,
+            p=PASSWORD_SCRYPT_P,
+            dklen=64,
+            maxmem=PASSWORD_SCRYPT_MAXMEM,
+        )
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, UnicodeError):
+        return False
 
 
 def state_of(account: Account) -> dict[str, Any]:
@@ -48,6 +101,18 @@ def account_for_telegram(db: Session, telegram_id: int) -> Account:
 def account_for_token(db: Session, token: str) -> Account | None:
     token_row = db.scalar(select(ApiToken).where(ApiToken.token_hash == hash_secret(token)))
     return db.get(Account, token_row.account_id) if token_row else None
+
+
+def revoke_token(db: Session, token: str, account_id: int) -> None:
+    db.query(ApiToken).filter(
+        ApiToken.token_hash == hash_secret(token),
+        ApiToken.account_id == account_id,
+    ).delete(synchronize_session=False)
+    db.commit()
+
+
+def revoke_account_tokens(db: Session, account_id: int) -> None:
+    db.query(ApiToken).filter(ApiToken.account_id == account_id).delete(synchronize_session=False)
 
 
 def put_state(db: Session, account: Account, state: dict[str, Any], expected_revision: int | None = None) -> int:

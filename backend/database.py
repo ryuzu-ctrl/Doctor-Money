@@ -2,7 +2,7 @@ import os
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -41,3 +41,19 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
     pass
+
+
+def migrate_auth_schema(target_engine=engine) -> None:
+    inspector = inspect(target_engine)
+    if "accounts" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("accounts")}
+    with target_engine.begin() as connection:
+        if "email" not in columns:
+            connection.execute(text("ALTER TABLE accounts ADD COLUMN email VARCHAR(320)"))
+        if "password_hash" not in columns:
+            connection.execute(text("ALTER TABLE accounts ADD COLUMN password_hash VARCHAR(255)"))
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_email ON accounts (email)"))
+        if target_engine.dialect.name == "postgresql":
+            for table in ("accounts", "api_tokens", "pair_codes", "password_resets"):
+                connection.execute(text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
