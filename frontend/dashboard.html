@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/logo.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Doctor Money</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1021,7 +1021,7 @@ function chartHTML(sel){
 }
 
 /* ---------- view pieces ---------- */
-function logo(){return '<svg viewBox="0 0 36 36" width="34" height="34" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.22)"/><path d="M15 8h6v7h7v6h-7v7h-6v-7H8v-6h7z" fill="url(#lg)"/><circle cx="18" cy="18" r="3.4" fill="#0B1634"/><path d="M18 16.3v3.4" stroke="url(#lg)" stroke-width="1.2" stroke-linecap="round"/></svg>';}
+function logo(){return '<img src="/logo.png" width="34" height="34" alt="" aria-hidden="true" style="object-fit:cover;border-radius:11px">';}
 function proDate(value){return value?new Date(value).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';}
 function proBanner(){
   if(!proStatus||!proStatus.active||S.tab==='pro')return '';

@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -13,9 +14,15 @@ def resolve_database_url() -> str:
     configured = os.getenv("DATABASE_URL")
     if configured:
         if configured.startswith("postgres://"):
-            return "postgresql+psycopg://" + configured.removeprefix("postgres://")
-        if configured.startswith("postgresql://"):
-            return "postgresql+psycopg://" + configured.removeprefix("postgresql://")
+            configured = "postgresql+psycopg://" + configured.removeprefix("postgres://")
+        elif configured.startswith("postgresql://"):
+            configured = "postgresql+psycopg://" + configured.removeprefix("postgresql://")
+        database_url = make_url(configured)
+        if database_url.host and "supabase" in database_url.host.lower():
+            query = dict(database_url.query)
+            if query.get("sslmode") not in {"require", "verify-ca", "verify-full"}:
+                query["sslmode"] = "require"
+                return database_url.set(query=query).render_as_string(hide_password=False)
         return configured
 
     pguser = os.getenv("PGUSER") or os.getenv("POSTGRES_USER")

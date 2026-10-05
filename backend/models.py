@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -11,7 +11,7 @@ class Account(Base):
     __table_args__ = (Index("uq_accounts_email", "email", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(320))
     password_hash: Mapped[str | None] = mapped_column(String(255))
     dashboard_linked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -36,7 +36,7 @@ class PairCode(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    telegram_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
@@ -49,7 +49,7 @@ class PasswordReset(Base):
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
     method: Mapped[str] = mapped_column(String(8), nullable=False)
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    telegram_id: Mapped[int | None] = mapped_column(Integer)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

@@ -36,6 +36,8 @@ class JsonFormatter(logging.Formatter):
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), handlers=[handler], force=True)
+# httpx logs full request URLs at INFO, which include the bot token.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger("doctor_money")
 LAST_REQUEST: dict[int, float] = {}
 
