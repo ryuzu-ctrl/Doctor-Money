@@ -2,6 +2,7 @@
 *.db
 *.sqlite
 *.sqlite3
+doctor_money.dump
 __pycache__/
 .pytest_cache/
 .venv/
