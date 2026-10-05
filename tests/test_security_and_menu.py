@@ -34,10 +34,12 @@ def test_invalid_or_stale_init_data_is_rejected():
 def test_main_menu_layout_and_callback_data():
     keyboard = main_menu("https://example.test/app")
     rows = keyboard.inline_keyboard
-    assert len(rows) == 12
+    assert len(rows) == 13
     assert len(rows[0]) == 1 and rows[0][0].web_app.url == "https://example.test/app"
-    assert all(len(row) == 2 for row in rows[1:])
+    assert all(len(row) == 2 for row in rows[1:-1])
+    assert len(rows[-1]) == 1
     callbacks = [button.callback_data for row in rows[1:] for button in row]
     assert callbacks[0] == "menu:top_crypto"
-    assert callbacks[-1] == "menu:help"
+    assert callbacks[-2] == "menu:help"
+    assert callbacks[-1] == "menu:premium"
     assert all(value.startswith("menu:") for value in callbacks)

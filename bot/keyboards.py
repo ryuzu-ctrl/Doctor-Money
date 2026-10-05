@@ -27,6 +27,7 @@ def main_menu(webapp_url: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(first[1], callback_data=f"menu:{first[0]}"),
             InlineKeyboardButton(second[1], callback_data=f"menu:{second[0]}"),
         ])
+    rows.append([InlineKeyboardButton("💎 Pro", callback_data="menu:premium")])
     return InlineKeyboardMarkup(rows)
 
 

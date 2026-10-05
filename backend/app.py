@@ -29,6 +29,7 @@ import httpx
 from .database import Base, SessionLocal, engine, migrate_auth_schema
 from .models import Account, PasswordReset, ProAccess, ProOrder
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
+from .pro import PRO_PLANS, pending_or_new_order, pro_payment_config
 from .security import InitDataError, validate_init_data
 from bot.services import market
 from bot.services.finance import prepare_legacy_state
@@ -135,12 +136,6 @@ class ProOrderRequest(BaseModel):
     plan_id: Literal["monthly", "six_months", "annual"]
 
 
-PRO_PLANS = {
-    "monthly": {"name": "1 bulan", "months": 1, "price": 20_000, "monthly_price": 20_000, "savings": 0},
-    "six_months": {"name": "6 bulan", "months": 6, "price": 100_000, "monthly_price": 16_667, "savings": 20_000},
-    "annual": {"name": "1 tahun", "months": 12, "price": 180_000, "monthly_price": 15_000, "savings": 60_000},
-}
-
 DUMMY_PASSWORD_HASH = "scrypt$32768$8$1$MDAwMDAwMDAwMDAwMDAwMA==$" + base64.urlsafe_b64encode(bytes(64)).decode("ascii")
 
 
@@ -172,13 +167,6 @@ def pro_access_active(access: ProAccess) -> bool:
     now = now_utc()
     ends_at = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
     return ends_at is not None and ends_at > now
-
-
-def pro_payment_config() -> dict[str, Any]:
-    method = os.getenv("PRO_PAYMENT_METHOD", "").strip()
-    account = os.getenv("PRO_PAYMENT_ACCOUNT", "").strip()
-    account_name = os.getenv("PRO_PAYMENT_ACCOUNT_NAME", "").strip()
-    return {"configured": bool(method and account and account_name), "method": method, "account": account, "account_name": account_name}
 
 
 def iso_utc(value: datetime | None) -> str | None:
@@ -287,15 +275,7 @@ def pro_status(db: Session = Depends(get_db), account: Account = Depends(current
 
 @app.post("/api/pro/orders")
 def create_pro_order(payload: ProOrderRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
-    pending = db.scalar(select(ProOrder).where(ProOrder.account_id == account.id, ProOrder.plan_id == payload.plan_id, ProOrder.status == "pending").order_by(ProOrder.created_at.desc()))
-    if pending:
-        return order_payload(pending)
-    plan = PRO_PLANS[payload.plan_id]
-    order = ProOrder(id=secrets.token_hex(12).upper(), account_id=account.id, plan_id=payload.plan_id, amount=plan["price"], status="pending", created_at=now_utc())
-    db.add(order)
-    db.commit()
-    db.refresh(order)
-    return order_payload(order)
+    return order_payload(pending_or_new_order(db, account.id, payload.plan_id))
 
 
 @app.get("/api/admin/pro/orders")

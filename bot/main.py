@@ -16,7 +16,7 @@ from telegram.ext import AIORateLimiter, Application, ApplicationBuilder, Callba
 from backend.database import Base, SessionLocal, engine
 from backend.models import Account
 from backend.repository import account_for_telegram, make_pair_code, read_bot_state
-from bot.handlers import finance, markets
+from bot.handlers import finance, markets, payment
 from bot.keyboards import back_menu, main_menu
 from bot.services.finance import dashboard_score, empty_state
 from bot.utils.formatting import rupiah
@@ -92,13 +92,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "/laporan ringkasan bulanan · /grafik pengeluaran · /pengingat tagihan\n"
             "/simulasi setoran bunga tahun · /hubungkan akun dashboard · /zona ubah zona waktu\n"
             "/topcrypto · /crypto · /indeks · /saham · /kurs · /watchlist · /alert · /portofolio · /emas · /feargreed\n"
-            "/hapusdata hapus data setelah dua konfirmasi\n\n"
+            "/bayar langganan Pro · /hapusdata hapus data setelah dua konfirmasi\n\n"
             "Contoh transaksi: <code>kopi 25.000</code>, <code>beli buku 1,5jt</code>, <code>bensin 50rb</code>, <code>gaji 9jt</code>.\n"
-            "Contoh simulasi: <code>1000000 8 10</code>.\nDukungan: hubungi administrator bot.")
+            "Contoh simulasi: <code>1000000 8 10</code>.\nDukungan: hubungi admin lewat WhatsApp.")
     support_url = os.getenv("SUPPORT_URL", "").strip()
     if support_url.startswith(("https://", "tg://")):
         text += f"\n\n<a href=\"{escape(support_url, quote=True)}\">Hubungi dukungan</a>"
-    await update.effective_message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=back_menu())
+    await update.effective_message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=payment.support_keyboard())
 
 
 async def timezone_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -140,7 +140,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await query.edit_message_text(_menu_text(), reply_markup=main_menu(_webapp_url()))
                 return
             if key == "help":
-                await query.edit_message_text("<b>Bantuan Doctor Money</b>\n/catat, /riwayat, /saldo, /wallet, /transfer, /budget, /laporan, /grafik, /pengingat, /simulasi, /hubungkan, /zona, /hapusdata.\n\nContoh: <code>kopi 25.000</code> atau <code>gaji 9jt</code>.", parse_mode=ParseMode.HTML, reply_markup=back_menu())
+                await query.edit_message_text("<b>Bantuan Doctor Money</b>\n/catat, /riwayat, /saldo, /wallet, /transfer, /budget, /laporan, /grafik, /pengingat, /simulasi, /hubungkan, /zona, /hapusdata.\n\nContoh: <code>kopi 25.000</code> atau <code>gaji 9jt</code>.", parse_mode=ParseMode.HTML, reply_markup=payment.support_keyboard())
+                return
+            if key == "premium":
+                await payment.show_payment(update, context, edit=True)
                 return
             if key == "connect":
                 await connect_account(update, context, edit=True)
@@ -163,6 +166,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await query.edit_message_text("Semua data akun bot telah dihapus.", reply_markup=back_menu())
             else:
                 await query.edit_message_text("Konfirmasi kedaluwarsa. Mulai lagi dengan /hapusdata.", reply_markup=back_menu())
+            return
+        if await payment.handle_callback(update, context):
             return
         if await finance.handle_callback(update, context):
             return
@@ -260,7 +265,7 @@ def _commands() -> list[BotCommand]:
         BotCommand("saham", "Cek harga saham"), BotCommand("kurs", "Konversi kurs"), BotCommand("watchlist", "Daftar aset pantauan"),
         BotCommand("alert", "Atur alert harga"), BotCommand("portofolio", "Lihat portofolio"), BotCommand("emas", "Harga emas"),
         BotCommand("feargreed", "Indeks sentimen crypto"),
-        BotCommand("help", "Bantuan"),
+        BotCommand("bayar", "Langganan Pro"), BotCommand("help", "Bantuan"),
     ]
 
 
@@ -306,6 +311,7 @@ def build_application() -> Application:
         "emas": lambda update, context: market_command(update, context, "gold"),
         "feargreed": lambda update, context: market_command(update, context, "fear_greed"),
         "zona": timezone_command, "hapusdata": delete_data,
+        "bayar": payment.show_payment, "pro": payment.show_payment,
     }
     for command, callback in commands.items():
         application.add_handler(CommandHandler(command, _rate_limited(callback)))
