@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import make_url
 
 from backend.database import migrate_auth_schema, resolve_database_url
 
@@ -19,6 +20,34 @@ def test_resolve_database_url_uses_installed_driver_for_postgres(monkeypatch, sc
 
 def test_resolve_database_url_preserves_explicit_driver(monkeypatch):
     configured = "postgresql+psycopg://user:password@localhost:5432/app"
+    monkeypatch.setenv("DATABASE_URL", configured)
+
+    assert resolve_database_url() == configured
+
+
+@pytest.mark.parametrize(
+    "scheme",
+    ["postgres://", "postgresql://", "postgresql+psycopg://"],
+)
+def test_resolve_database_url_requires_ssl_for_supabase(monkeypatch, scheme):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        f"{scheme}postgres.project-ref:password@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+        "?application_name=doctor-money&sslmode=disable",
+    )
+
+    resolved = make_url(resolve_database_url())
+
+    assert resolved.drivername == "postgresql+psycopg"
+    assert resolved.query["sslmode"] == "require"
+    assert resolved.query["application_name"] == "doctor-money"
+
+
+def test_resolve_database_url_preserves_stronger_supabase_sslmode(monkeypatch):
+    configured = (
+        "postgresql://user:password@db.project-ref.supabase.co:5432/postgres"
+        "?sslmode=verify-full"
+    )
     monkeypatch.setenv("DATABASE_URL", configured)
 
     assert resolve_database_url() == configured

@@ -49,7 +49,7 @@ Data entitlement dan order disimpan pada tabel `pro_access` dan `pro_orders`, ya
 
 Menu utama Telegram menyediakan Web App dan 22 tombol fitur. Command keuangan mencakup `/catat`, `/riwayat`, `/saldo`, `/wallet`, `/transfer`, `/budget`, `/laporan`, `/grafik`, `/pengingat`, `/simulasi`, `/zona`, `/hubungkan`, dan `/hapusdata`. Command pasar mencakup `/topcrypto`, `/crypto`, `/indeks`, `/saham`, `/kurs`, `/watchlist`, `/alert`, `/portofolio`, `/emas`, dan `/feargreed`. `/alert BTC > 70000` dapat langsung membuat alert. Pengaitan memakai kode satu kali yang kedaluwarsa dalam 10 menit. Bot yang belum terhubung memakai akun lokal yang terisolasi per `telegram_id`; saat ditautkan, bot dan dashboard membaca state yang sama.
 
-API menyimpan JSON state dashboard dengan revisi optimistis dalam database yang dikonfigurasi. Bot dan API menggunakan transaksi repository yang sama. `DATABASE_URL` menerima URL PostgreSQL Railway (`postgresql://...`) maupun SQLAlchemy (`postgresql+psycopg://...`); URL PostgreSQL standar otomatis menggunakan driver `psycopg` yang disertakan.
+API menyimpan JSON state dashboard dengan revisi optimistis dalam database yang dikonfigurasi. Bot dan API menggunakan transaksi repository yang sama. `DATABASE_URL` menerima URL PostgreSQL standar (`postgresql://...`) maupun SQLAlchemy (`postgresql+psycopg://...`); URL PostgreSQL standar otomatis menggunakan driver `psycopg` yang disertakan. Host Supabase otomatis memakai TLS (`sslmode=require`) kecuali URL sudah menetapkan mode TLS yang lebih kuat.
 
 ## Docker dan Produksi
 
@@ -59,22 +59,32 @@ docker compose up --build -d
 
 Compose menjalankan API pada port 8000 dan bot pada polling dengan volume database persisten. Taruh reverse proxy HTTPS di depannya; jangan mengekspos database atau endpoint internal. Cadangkan volume `doctor-money-data` secara rutin. Untuk deployment Railway atau multi-instance, gunakan PostgreSQL.
 
-### Deployment Railway Postgres + Firebase
+### Deployment Railway + Supabase + Firebase
 
-Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menjalankan API, bot, dan Postgres; Firebase Hosting tetap menyajikan halaman web. Kedua service aplikasi Railway harus memakai database Postgres yang sama.
+Aplikasi ini adalah backend/bot Python dengan frontend HTML statis. Railway menjalankan API dan bot; Supabase menyediakan PostgreSQL; Firebase Hosting menyajikan halaman web. Kedua service Railway harus memakai connection string Supabase yang sama supaya dashboard dan bot melihat akun serta data yang sama.
 
-1. Tambahkan service PostgreSQL pada project dan environment Railway yang sama dengan aplikasi. Di setiap service aplikasi, buat variable reference `DATABASE_URL` yang menunjuk ke `DATABASE_URL` milik service PostgreSQL (misalnya `${{Postgres.DATABASE_URL}}`, dengan nama service yang sesuai). Gunakan URL private internal Railway, bukan public proxy URL, untuk service yang berjalan di Railway.
-2. Buat dua service Railway dari repository ini: satu untuk API dan satu untuk bot. Keduanya memakai konfigurasi `railway.json` dan script `start.sh`. URL PostgreSQL standar Railway (`postgresql://...`) otomatis diarahkan ke driver `psycopg`.
-3. Pada service API, atur `APP_RUNTIME=api`. Pada service bot, atur `APP_RUNTIME=bot` dan `MODE=polling`. Buat domain publik hanya untuk service API; bot polling tidak memerlukan domain publik.
-4. Isi variabel yang diperlukan pada kedua service: `DATABASE_URL`, `BOT_TOKEN`, `APP_SECRET`, `WEBAPP_URL=https://doctor-moneys.web.app`, dan `TZ=Asia/Jakarta`. `APP_SECRET` harus berupa nilai acak yang kuat dan sama pada kedua service. Tambahkan variabel `PRO_*` dan `COINGECKO_API_KEY` bila fitur tersebut digunakan. Untuk pengembangan lokal, pakai connection URL publik Railway atau tunnel; hostname `.railway.internal` hanya dapat diakses dari jaringan Railway.
-5. Salin domain publik API Railway ke `API_BASE_URL` pada `frontend/dashboard.html` (tanpa garis miring di akhir). Pastikan `WEBAPP_URL` pada service API sama dengan origin Firebase Hosting agar CORS mengizinkan dashboard.
-6. Deploy frontend ke Firebase Hosting:
+1. Buat proyek Supabase. Di **Connect**, pilih **Session pooler** (host dan username harus disalin persis dari proyek Anda; port `5432`). Ini menyediakan koneksi IPv4 yang sesuai untuk service Railway yang berjalan lama. Jangan pilih **Transaction pooler** untuk koneksi SQLAlchemy aplikasi ini.
+2. Sebelum beralih database, buat backup terbaru database PostgreSQL Railway. Lalu hentikan sementara service API dan bot agar tidak ada transaksi baru selama dump/restore. Dari mesin tepercaya yang memiliki akses ke kedua database, set `RAILWAY_DATABASE_URL` ke connection string PostgreSQL Railway yang dapat diakses dari mesin tersebut (aktifkan TCP Proxy/public networking sementara bila diperlukan) dan `SUPABASE_DATABASE_URL` ke connection string Supabase Session pooler. Jangan masukkan kedua URL ke chat, source control, log, atau file repo.
+3. Pastikan target Supabase adalah database baru/kosong, kemudian salin schema dan semua baris, termasuk akun, token, kode pairing, reset password, langganan, dan order:
+
+```bash
+pg_dump --format=custom --no-owner --no-acl \
+  --file=doctor_money.dump "$RAILWAY_DATABASE_URL"
+pg_restore --no-owner --no-acl --exit-on-error \
+  --dbname="$SUPABASE_DATABASE_URL" doctor_money.dump
+```
+
+URL harus berisi password database yang benar; percent-encode karakter khusus password (misalnya `@`, `#`, `?`, atau spasi). Gunakan URL Session pooler Supabase lengkap dari dialog **Connect**, jangan menebak hostname atau username. Arsip dump memuat data finansial sensitif: simpan secara privat, jangan commit, verifikasi keberhasilan restore, lalu hapus salinan sementara dengan aman. Jangan jalankan restore ke proyek Supabase yang sudah berisi data yang perlu dipertahankan.
+
+4. Di Railway, buat dua service aplikasi dari repo ini: API dan bot. Keduanya menggunakan konfigurasi `railway.json`/`start.sh`; set `APP_RUNTIME=api` untuk API, serta `APP_RUNTIME=bot` dan `MODE=polling` untuk bot. Atur `DATABASE_URL` pada **keduanya** ke string Session pooler Supabase yang sama. Atur juga `BOT_TOKEN`, `APP_SECRET` yang kuat dan sama pada kedua service, `WEBAPP_URL=https://doctor-moneys.web.app`, dan `TZ=Asia/Jakarta`. Tambahkan variabel `PRO_*`, SMTP, atau `COINGECKO_API_KEY` hanya jika fitur terkait digunakan. Jangan set `SUPABASE_SERVICE_ROLE_KEY` pada frontend; aplikasi terhubung ke PostgreSQL langsung dari backend dan tidak memerlukan Supabase client key.
+5. Setelah restore diverifikasi, deploy ulang API dan bot dengan database Supabase yang sama. Pastikan keduanya berjalan dengan `DATABASE_URL` baru sebelum mengaktifkan kembali penulisan. Periksa login akun lama dan state keuangan lewat dashboard/bot. Biarkan database Railway yang lama utuh sebagai rollback sampai pemeriksaan selesai. Jika ada masalah, hentikan penulisan, kembalikan `DATABASE_URL` kedua service ke database Railway, lalu deploy ulang keduanya.
+6. Buat domain publik hanya untuk service API. Salin domain tersebut ke `API_BASE_URL` pada `frontend/dashboard.html` (tanpa garis miring di akhir), dan pastikan `WEBAPP_URL` sama dengan origin Firebase agar CORS mengizinkan dashboard. Jika `API_BASE_URL` berubah, deploy ulang frontend:
 
 ```bash
 firebase deploy --only hosting
 ```
 
-Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; dashboard mengirim permintaan `/api/*` langsung ke API Railway. API dan bot berbagi akun, state, serta data lewat Railway Postgres. Jika domain API atau Firebase berubah, perbarui `API_BASE_URL`/`WEBAPP_URL` lalu deploy ulang frontend bila `API_BASE_URL` berubah. Jika lebih nyaman memakai Supabase, set `DATABASE_URL` ke URL Postgres Supabase dengan format `postgresql+psycopg://...` dan `sslmode=require` seperti yang ditunjukkan di `.env.example`.
+Firebase Hosting menyediakan `/dashboard` dari `frontend/dashboard.html`; request `/api/*` dikirim langsung ke API Railway. Untuk pengembangan lokal, gunakan URL Supabase yang dapat diakses dari komputer Anda, bukan hostname internal `.railway.internal`.
 
 Gunakan `MODE=webhook` hanya jika Anda memang mengatur webhook. Dalam mode itu, `WEBHOOK_URL` harus menunjuk ke domain publik service bot yang menjalankan `bot.main`, bukan otomatis domain API.
 
