@@ -114,16 +114,31 @@ h1.title em{font-style:normal;background:linear-gradient(100deg,#9CF8F9,var(--ac
 .card{padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .card h3{font:600 20px/1.25 var(--display);letter-spacing:-.01em}
 .card p{color:var(--muted);font-size:15px}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.price-card{padding:24px;min-width:0;display:flex;flex-direction:column;gap:12px}
-.price-card.featured{border-color:rgba(79,227,230,.5);background:linear-gradient(155deg,rgba(79,227,230,.14),rgba(255,255,255,.035))}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;padding-top:18px}
+.price-card{position:relative;padding:28px 24px 24px;min-width:0;display:flex;flex-direction:column;gap:16px;transition:transform .2s,border-color .2s}
+.price-card:hover{transform:translateY(-4px);border-color:rgba(79,227,230,.35)}
+.price-card.featured{border-color:rgba(79,227,230,.6);background:linear-gradient(155deg,rgba(79,227,230,.2),rgba(138,108,255,.1) 55%,rgba(255,255,255,.04));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 24px 60px rgba(79,227,230,.18),0 18px 44px rgba(0,0,12,.4)}
+.price-ribbon{position:absolute;top:-13px;left:24px;padding:7px 13px;border-radius:999px;background:linear-gradient(145deg,#7CF3F5,var(--accent-2));color:var(--accent-ink);font:700 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 20px rgba(79,227,230,.35)}
+.price-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:26px}
 .price-card h3{font:600 19px var(--display)}
-.price-value{font:700 30px/1.1 var(--display);font-variant-numeric:tabular-nums;color:var(--fg)}
-.price-value small{font:500 14px var(--body);color:var(--muted)}
-.price-equivalent{font-size:13px;color:var(--muted)}
-.price-saving{font-size:13px;color:var(--good)}
-.price-card .btn{margin-top:auto}
-@media (max-width:760px){.pricing-grid{grid-template-columns:1fr}}
+.price-off{padding:5px 10px;border-radius:999px;background:rgba(110,231,160,.13);color:var(--good);font:600 12px/1 var(--body);white-space:nowrap}
+.price-value{font:700 clamp(30px,3.4vw,38px)/1.05 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg)}
+.price-value small{font:500 14px var(--body);letter-spacing:0;color:var(--muted)}
+.price-bill{font-size:13.5px;color:var(--muted);margin-top:-8px}
+.price-bill s{color:var(--faint)}
+.price-bill b{color:var(--fg);font-weight:600}
+.price-saving{font-size:13.5px;font-weight:600;color:var(--good);margin-top:-10px}
+.price-list{list-style:none;margin:0;padding:16px 0 0;border-top:1px solid var(--line-soft);display:grid;gap:9px;font-size:14px;line-height:1.45;color:var(--muted)}
+.price-list li{display:flex;gap:9px;align-items:flex-start}
+.price-list li::before{content:"";flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;background:rgba(79,227,230,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%234FE3E6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.4l2.3 2.3 4.7-5'/%3E%3C/svg%3E") center/10px no-repeat}
+.price-card .btn{margin-top:auto;width:100%}
+.price-note{font-size:12.5px;color:var(--faint);text-align:center;margin-top:-6px}
+.pricing-foot{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13.5px;color:var(--muted)}
+.pricing-foot span{display:inline-flex;align-items:center;gap:8px}
+.pricing-foot span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+@media (min-width:761px){.price-card.featured{transform:translateY(-14px)}.price-card.featured:hover{transform:translateY(-18px)}}
+@media (max-width:760px){.pricing-grid{grid-template-columns:1fr;gap:24px}.price-card.featured{order:-1}}
+@media (prefers-reduced-motion:reduce){.price-card{transition:none}}
 .c-a{grid-column:span 4}.c-b{grid-column:span 2}.c-c{grid-column:span 2}.c-d{grid-column:span 2}.c-e{grid-column:span 2}.c-h{grid-column:span 3}
 .qrows{display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .qrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.2);border:1px solid var(--line-soft);font-size:14px}
@@ -264,7 +279,7 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
     </div>
 
     <div class="stage" aria-label="Contoh tampilan dashboard Doctor Money">
-      <div class="float glass f1"><span class="d" data-i="trend" data-s="18"></span><div><b>Doctor</b><span class="s">Sehat bulan ini</span></div></div>
+      <div class="float glass f1"><span class="d" data-i="trend" data-s="18"></span><div><b>Keuangan</b><span class="s">Sehat bulan ini</span></div></div>
       <div class="phone">
         <div class="p-top"><span>10:09</span><span>Doctor Money</span></div>
         <div class="p-hi">Selamat Pagi, <b>Sarah</b>!</div>
@@ -300,16 +315,46 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
     <div class="head"><span class="eyebrow">Doctor Money Pro</span><h2 class="h2">Semua fitur dashboard, satu langganan.</h2><p class="lede">Coba gratis 7 hari. Setelah itu, pilih paket bulanan atau hemat dengan paket 6 bulan dan tahunan. Pembayaran manual dikonfirmasi admin.</p></div>
     <div class="pricing-grid">
       <article class="glass price-card">
-        <h3>Bulanan</h3><div class="price-value">Rp 20.000<small> / bulan</small></div><p class="price-equivalent">Akses penuh selama 1 bulan.</p><a class="btn" href="/dashboard?plan=monthly">Pilih paket bulanan</a>
+        <div class="price-top"><h3>Bulanan</h3></div>
+        <div class="price-value">Rp 20.000<small> / bulan</small></div>
+        <p class="price-bill">Bayar <b>Rp 20.000</b> per bulan. Cocok untuk mencoba dulu.</p>
+        <ul class="price-list">
+          <li>Dashboard lengkap: transaksi, anggaran, aset, dan dompet</li>
+          <li>Skor kesehatan keuangan 0–100</li>
+          <li>Sinkron dengan bot Telegram</li>
+        </ul>
+        <a class="btn" href="/dashboard?plan=monthly">Pilih paket bulanan</a>
+        <p class="price-note">Gratis 7 hari pertama</p>
       </article>
       <article class="glass price-card">
-        <h3>6 bulan</h3><div class="price-value">Rp 100.000</div><p class="price-equivalent">Setara Rp 16.667 per bulan.</p><p class="price-saving">Hemat Rp 20.000 dibanding harga bulanan.</p><a class="btn" href="/dashboard?plan=six_months">Pilih paket 6 bulan</a>
+        <div class="price-top"><h3>6 bulan</h3><span class="price-off">Hemat 17%</span></div>
+        <div class="price-value">Rp 16.667<small> / bulan</small></div>
+        <p class="price-bill">Bayar <s>Rp 120.000</s> <b>Rp 100.000</b> untuk 6 bulan.</p>
+        <p class="price-saving">Gratis 1 bulan: hemat Rp 20.000</p>
+        <ul class="price-list">
+          <li>Dashboard lengkap: transaksi, anggaran, aset, dan dompet</li>
+          <li>Skor kesehatan keuangan 0–100</li>
+          <li>Sinkron dengan bot Telegram</li>
+        </ul>
+        <a class="btn" href="/dashboard?plan=six_months">Pilih paket 6 bulan</a>
+        <p class="price-note">Gratis 7 hari pertama</p>
       </article>
       <article class="glass price-card featured">
-        <span class="eyebrow">Paling hemat</span><h3>1 tahun</h3><div class="price-value">Rp 180.000</div><p class="price-equivalent">Setara Rp 15.000 per bulan.</p><p class="price-saving">Hemat Rp 60.000 dibanding harga bulanan.</p><a class="btn primary" href="/dashboard?plan=annual">Pilih paket tahunan</a>
+        <span class="price-ribbon">Paling hemat</span>
+        <div class="price-top"><h3>1 tahun</h3><span class="price-off">Hemat 25%</span></div>
+        <div class="price-value">Rp 15.000<small> / bulan</small></div>
+        <p class="price-bill">Bayar <s>Rp 240.000</s> <b>Rp 180.000</b> untuk 12 bulan.</p>
+        <p class="price-saving">Gratis 3 bulan: hemat Rp 60.000</p>
+        <ul class="price-list">
+          <li>Dashboard lengkap: transaksi, anggaran, aset, dan dompet</li>
+          <li>Skor kesehatan keuangan 0–100</li>
+          <li>Sinkron dengan bot Telegram</li>
+        </ul>
+        <a class="btn primary" href="/dashboard?plan=annual">Pilih paket tahunan</a>
+        <p class="price-note">Gratis 7 hari pertama</p>
       </article>
     </div>
-    <p class="small">Semua paket mencakup akses penuh dashboard. Masa aktif berbayar dimulai setelah sisa masa coba 7 hari digunakan.</p>
+    <div class="pricing-foot"><span>Fitur sama di semua paket</span><span>Masa berbayar baru dihitung setelah 7 hari coba gratis habis</span><span>Tanpa perpanjangan otomatis</span></div>
   </section>
 
   <section id="fitur">
