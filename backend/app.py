@@ -1,4 +1,3 @@
-import calendar
 import base64
 import asyncio
 import hmac
@@ -28,6 +27,7 @@ import httpx
 
 from .database import Base, SessionLocal, engine, migrate_auth_schema
 from .models import Account, PasswordReset, ProAccess, ProOrder
+from .pro import PRO_PLANS, activate_pro_plan, ensure_pro_access, pro_access_active, pro_payment_config
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
 from .security import InitDataError, validate_init_data
 from bot.services import market
@@ -40,6 +40,7 @@ if engine.dialect.name == "postgresql":
     with engine.begin() as connection:
         connection.exec_driver_sql('ALTER TABLE "pro_access" ENABLE ROW LEVEL SECURITY')
         connection.exec_driver_sql('ALTER TABLE "pro_orders" ENABLE ROW LEVEL SECURITY')
+        connection.exec_driver_sql('ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY')
 app = FastAPI(title="Doctor Money API", version="1.0.0")
 logger = logging.getLogger("doctor_money.auth")
 webapp_url = os.getenv("WEBAPP_URL", "").strip().rstrip("/")
@@ -135,50 +136,7 @@ class ProOrderRequest(BaseModel):
     plan_id: Literal["monthly", "six_months", "annual"]
 
 
-PRO_PLANS = {
-    "monthly": {"name": "1 bulan", "months": 1, "price": 20_000, "monthly_price": 20_000, "savings": 0},
-    "six_months": {"name": "6 bulan", "months": 6, "price": 100_000, "monthly_price": 16_667, "savings": 20_000},
-    "annual": {"name": "1 tahun", "months": 12, "price": 180_000, "monthly_price": 15_000, "savings": 60_000},
-}
-
 DUMMY_PASSWORD_HASH = "scrypt$32768$8$1$MDAwMDAwMDAwMDAwMDAwMA==$" + base64.urlsafe_b64encode(bytes(64)).decode("ascii")
-
-
-def ensure_pro_access(db: Session, account: Account) -> ProAccess:
-    access = db.get(ProAccess, account.id)
-    if access is None:
-        now = now_utc()
-        access = ProAccess(account_id=account.id, status="trial", trial_started_at=now, trial_ends_at=now + timedelta(days=7), updated_at=now)
-        db.add(access)
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            access = db.get(ProAccess, account.id)
-            if access is None:
-                raise
-        else:
-            db.refresh(access)
-    now = now_utc()
-    ends_at = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
-    if ends_at is not None and ends_at <= now:
-        access.status = "expired"
-        access.updated_at = now
-        db.commit()
-    return access
-
-
-def pro_access_active(access: ProAccess) -> bool:
-    now = now_utc()
-    ends_at = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
-    return ends_at is not None and ends_at > now
-
-
-def pro_payment_config() -> dict[str, Any]:
-    method = os.getenv("PRO_PAYMENT_METHOD", "").strip()
-    account = os.getenv("PRO_PAYMENT_ACCOUNT", "").strip()
-    account_name = os.getenv("PRO_PAYMENT_ACCOUNT_NAME", "").strip()
-    return {"configured": bool(method and account and account_name), "method": method, "account": account, "account_name": account_name}
 
 
 def iso_utc(value: datetime | None) -> str | None:
@@ -215,13 +173,6 @@ def require_pro_admin(authorization: str | None) -> None:
         raise HTTPException(status_code=503, detail="PRO_ADMIN_SECRET belum dikonfigurasi")
     if scheme.lower() != "bearer" or not hmac.compare_digest(secret, expected):
         raise HTTPException(status_code=401, detail="Tidak diizinkan")
-
-
-def add_months(value: datetime, months: int) -> datetime:
-    month_index = value.year * 12 + value.month - 1 + months
-    year, month_zero = divmod(month_index, 12)
-    month = month_zero + 1
-    return value.replace(year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1]))
 
 
 def validate_state(state: dict[str, Any]) -> None:
@@ -317,15 +268,8 @@ def activate_pro_order(order_id: str, authorization: str | None = Header(default
     if order.status != "pending":
         raise HTTPException(status_code=409, detail="Order tidak dapat diaktifkan")
 
-    access = ensure_pro_access(db, db.get(Account, order.account_id))
+    access = activate_pro_plan(db, db.get(Account, order.account_id), order.plan_id)
     now = now_utc()
-    current_end = access.expires_at if access.status == "active" else access.trial_ends_at if access.status == "trial" else None
-    starts_at = current_end if current_end and current_end > now else now
-    access.status = "active"
-    access.plan_id = order.plan_id
-    access.starts_at = starts_at
-    access.expires_at = add_months(starts_at, PRO_PLANS[order.plan_id]["months"])
-    access.updated_at = now
     order.status = "paid"
     order.paid_at = now
     db.commit()

@@ -20,6 +20,7 @@ def main_menu(webapp_url: str) -> InlineKeyboardMarkup:
     rows = []
     if webapp_url.startswith("https://"):
         rows.append([InlineKeyboardButton("🌐 Buka Web App", web_app=WebAppInfo(url=webapp_url))])
+    rows.append([InlineKeyboardButton("💎 Upgrade Premium", callback_data="menu:upgrade")])
     for index in range(0, len(MENU_ITEMS), 2):
         first = MENU_ITEMS[index]
         second = MENU_ITEMS[index + 1]

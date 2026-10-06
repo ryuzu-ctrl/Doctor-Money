@@ -16,9 +16,10 @@ from telegram.ext import AIORateLimiter, Application, ApplicationBuilder, Callba
 from backend.database import Base, SessionLocal, engine
 from backend.models import Account
 from backend.repository import account_for_telegram, make_pair_code, read_bot_state
-from bot.handlers import finance, markets
+from bot.handlers import finance, markets, payments
 from bot.keyboards import back_menu, main_menu
 from bot.services.finance import dashboard_score, empty_state
+from bot.services.payments import ensure_proof_bucket
 from bot.utils.formatting import rupiah
 
 
@@ -156,6 +157,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             if key == "connect":
                 await connect_account(update, context, edit=True)
                 return
+            if await payments.show_menu(update, context, key):
+                return
             if await finance.show_menu(update, context, key):
                 return
             if await markets.show_menu(update, context, key, edit=True):
@@ -174,6 +177,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await query.edit_message_text("Semua data akun bot telah dihapus.", reply_markup=back_menu())
             else:
                 await query.edit_message_text("Konfirmasi kedaluwarsa. Mulai lagi dengan /hapusdata.", reply_markup=back_menu())
+            return
+        if await payments.handle_callback(update, context):
             return
         if await finance.handle_callback(update, context):
             return
@@ -204,6 +209,14 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logger.exception("Pesan teks gagal", extra={"user_id": user_id, "update_id": update.update_id})
         await update.effective_message.reply_text("Maaf, data belum dapat diproses. Silakan coba lagi.")
+
+
+async def on_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        await payments.handle_photo(update, context)
+    except Exception:
+        logger.exception("Foto gagal diproses", extra={"user_id": update.effective_user.id, "update_id": update.update_id})
+        await update.effective_message.reply_text("Maaf, foto belum dapat diproses. Silakan coba lagi.")
 
 
 async def reminders_job(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -241,12 +254,20 @@ async def reminders_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def post_init(application: Application) -> None:
     Base.metadata.create_all(bind=engine)
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as connection:
+            connection.exec_driver_sql('ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY')
+    try:
+        await ensure_proof_bucket()
+    except Exception:
+        logger.exception("Bucket bukti transfer belum siap")
     webapp = WebAppInfo(url=_webapp_url())
     await application.bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Doctor Money", web_app=webapp))
     await application.bot.set_my_commands(_commands())
     if application.job_queue:
         application.job_queue.run_repeating(markets.check_alerts, interval=60, first=20, name="price-alerts")
         application.job_queue.run_repeating(reminders_job, interval=60, first=30, name="bill-reminders")
+        application.job_queue.run_repeating(payments.payments_job, interval=60, first=40, name="payments")
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -322,6 +343,7 @@ def build_application() -> Application:
         application.add_handler(CommandHandler(command, _rate_limited(callback)))
     application.add_handler(CallbackQueryHandler(on_callback))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    application.add_handler(MessageHandler(filters.PHOTO, on_photo))
     application.add_error_handler(error_handler)
     return application
 

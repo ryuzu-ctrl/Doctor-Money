@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 
-from backend.database import migrate_auth_schema, resolve_database_url
+from cc.database import migrate_auth_schema, resolve_database_url
 
 
 @pytest.mark.parametrize("scheme", ["postgres://", "postgresql://"])

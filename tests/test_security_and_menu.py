@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 
 import pytest
 
-from backend.security import InitDataError, validate_init_data
+from cc.security import InitDataError, validate_init_data
 from bot.keyboards import main_menu
 
 
