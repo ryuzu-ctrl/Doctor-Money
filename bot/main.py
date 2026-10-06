@@ -36,6 +36,8 @@ class JsonFormatter(logging.Formatter):
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), handlers=[handler], force=True)
+# httpx logs full request URLs at INFO, which include the bot token.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger("doctor_money")
 LAST_REQUEST: dict[int, float] = {}
 
@@ -48,7 +50,18 @@ def _webapp_url() -> str:
 
 
 def _menu_text() -> str:
-    return "🏠 Menu Utama\n\nSilakan pilih menu di bawah:"
+    return (
+        "🩺 DOCTOR MONEY ASSISTANT\n"
+        "Asisten keuangan pribadi Anda\n"
+        "\n"
+        "Kelola keuangan lebih mudah dalam satu tempat.\n"
+        "Catat transaksi, pantau kondisi finansial, analisis kebiasaan, hingga lihat gambaran masa depan keuangan Anda.\n"
+        "\n"
+        "⭐ INGIN FITUR LEBIH LENGKAP?\n"
+        "Gunakan Doctor Money PRO untuk membuka pengalaman finansial yang lebih powerful.\n"
+        "\n"
+        "📋 Pilih menu yang ingin Anda gunakan:"
+    )
 
 
 async def _linked(update: Update) -> bool:
