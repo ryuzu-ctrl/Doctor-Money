@@ -10,10 +10,10 @@ _database_path = os.path.join(tempfile.gettempdir(), f"doctor-money-{uuid.uuid4(
 os.environ["DATABASE_URL"] = "sqlite:///" + _database_path
 os.environ["WEBAPP_URL"] = "https://doctor-money.example.web.app"
 
-from cc.app import app
-from cc.database import SessionLocal, engine
-from cc.models import Account, PasswordReset, ProAccess
-from cc.repository import account_for_token, make_pair_code, now_utc
+from backend.app import app
+from backend.database import SessionLocal, engine
+from backend.models import Account, PasswordReset, ProAccess
+from backend.repository import account_for_token, make_pair_code, now_utc
 
 
 @pytest.fixture

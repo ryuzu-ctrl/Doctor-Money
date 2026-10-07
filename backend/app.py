@@ -15,7 +15,7 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import Any, Generator, Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import JSONResponse
@@ -30,6 +30,7 @@ from .models import Account, PasswordReset, ProAccess, ProOrder
 from .pro import PRO_PLANS, activate_pro_plan, ensure_pro_access, pro_access_active, pro_payment_config
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
 from .security import InitDataError, validate_init_data
+from . import whatsapp
 from bot.services import market
 from bot.services.finance import prepare_legacy_state
 
@@ -608,6 +609,63 @@ def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(re
         new_account(db, telegram_id, name=state_of(account).get("name", "Sobat"))
     db.commit()
     return {"status": "terputus"}
+
+
+@app.get("/api/whatsapp/status")
+def whatsapp_status(account: Account = Depends(require_pro)) -> dict[str, Any]:
+    return {"configured": whatsapp.configured(), "connected": account.whatsapp_number is not None, "number": account.whatsapp_number, "bot_number": whatsapp.bot_number()}
+
+
+@app.post("/api/whatsapp/link-code")
+def whatsapp_link_code(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, Any]:
+    if not account.email:
+        raise HTTPException(status_code=403, detail="Buat akun email atau masuk sebelum menghubungkan WhatsApp")
+    if not whatsapp.configured():
+        raise HTTPException(status_code=503, detail="Layanan WhatsApp belum dikonfigurasi")
+    if not check_rate_limit("wa-code:" + str(account.id), limit=5, window=3600):
+        raise HTTPException(status_code=429, detail="Terlalu banyak permintaan kode. Coba lagi nanti.")
+    code, expiry = whatsapp.make_link_code(db, account)
+    return {"code": code, "expires_at": iso_utc(expiry), "bot_number": whatsapp.bot_number()}
+
+
+@app.delete("/api/whatsapp/link")
+def unlink_whatsapp(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
+    account.whatsapp_number = None
+    db.commit()
+    return {"status": "terputus"}
+
+
+@app.post("/api/whatsapp/webhook")
+def whatsapp_webhook(payload: dict[str, Any], background: BackgroundTasks, signature: str | None = Header(default=None, alias="X-Webhook-Signature"), db: Session = Depends(get_db)) -> dict[str, str]:
+    expected = os.getenv("WASENDER_WEBHOOK_SECRET", "").strip()
+    if not whatsapp.configured():
+        raise HTTPException(status_code=503, detail="Layanan WhatsApp belum dikonfigurasi")
+    if not hmac.compare_digest((signature or "").encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="Tidak diizinkan")
+    incoming = whatsapp.incoming_message(payload)
+    if incoming is None:
+        return {"status": "ignored"}
+    number, text, message_id = incoming
+    if message_id and not check_rate_limit("wa-message:" + message_id, limit=1, window=3600):
+        return {"status": "duplicate"}
+    if not check_rate_limit("wa:" + number, limit=20, window=60):
+        return {"status": "rate_limited"}
+
+    command = whatsapp.parse_message(text)
+    account = db.scalar(select(Account).where(Account.whatsapp_number == number))
+    if command["kind"] == "link":
+        if not check_rate_limit("wa-link:" + number, limit=5, window=3600):
+            reply = "Terlalu banyak percobaan kode. Coba lagi dalam satu jam."
+        else:
+            reply = whatsapp.link_number(db, number, command["code"])
+    elif account is None:
+        if not check_rate_limit("wa-unlinked:" + number, limit=2, window=3600):
+            return {"status": "ignored"}
+        reply = whatsapp.UNLINKED_TEXT
+    else:
+        reply = whatsapp.reply_for(account.id, command)
+    background.add_task(whatsapp.send_text, number, reply)
+    return {"status": "ok"}
 
 
 @app.get("/api/link/code/{telegram_id}")

@@ -2,9 +2,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from cc.database import Base
-import cc.database as database
-from cc.repository import account_for_telegram, apply_bot_mutation, put_state, read_bot_state, state_of
+from backend.database import Base
+import backend.database as database
+from backend.repository import account_for_telegram, apply_bot_mutation, put_state, read_bot_state, state_of
 
 
 @pytest.fixture

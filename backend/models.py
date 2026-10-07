@@ -8,12 +8,13 @@ from .database import Base
 
 class Account(Base):
     __tablename__ = "accounts"
-    __table_args__ = (Index("uq_accounts_email", "email", unique=True),)
+    __table_args__ = (Index("uq_accounts_email", "email", unique=True), Index("uq_accounts_whatsapp_number", "whatsapp_number", unique=True))
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(320))
     password_hash: Mapped[str | None] = mapped_column(String(255))
+    whatsapp_number: Mapped[str | None] = mapped_column(String(20))
     dashboard_linked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     state_json: Mapped[str] = mapped_column(Text, nullable=False)
     revision: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -37,6 +38,17 @@ class PairCode(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class WhatsAppLinkCode(Base):
+    __tablename__ = "whatsapp_link_codes"
+    __table_args__ = (UniqueConstraint("code_hash"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
 

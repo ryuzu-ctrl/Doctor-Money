@@ -51,6 +51,35 @@ Menu utama Telegram menyediakan Web App dan 22 tombol fitur. Command keuangan me
 
 API menyimpan JSON state dashboard dengan revisi optimistis dalam database yang dikonfigurasi. Bot dan API menggunakan transaksi repository yang sama. `DATABASE_URL` menerima URL PostgreSQL standar (`postgresql://...`) maupun SQLAlchemy (`postgresql+psycopg://...`); URL PostgreSQL standar otomatis menggunakan driver `psycopg` yang disertakan. Host Supabase otomatis memakai TLS (`sslmode=require`) kecuali URL sudah menetapkan mode TLS yang lebih kuat.
 
+## Pencatatan lewat WhatsApp
+
+Transaksi bisa dicatat dengan mengirim pesan WhatsApp ke nomor bot. Data masuk ke akun yang sama dengan dashboard dan bot Telegram, sehingga langsung terlihat di keduanya (dashboard menyegarkan data tiap 30 detik). Gateway yang dipakai adalah [WasenderAPI](https://wasenderapi.com).
+
+Penyiapan (sekali saja):
+
+1. Di dashboard WasenderAPI, buat sesi WhatsApp dan scan QR dengan nomor yang akan menjadi bot. Salin **API Key** sesi tersebut.
+2. Di pengaturan sesi, isi **Webhook URL** dengan `https://DOMAIN-API-ANDA/api/whatsapp/webhook`, buat **Webhook Secret**, dan aktifkan event `messages.received`.
+3. Di service API (Railway), isi `WASENDER_API_KEY`, `WASENDER_WEBHOOK_SECRET`, dan `WHATSAPP_BOT_NUMBER` (nomor bot, format `62xxx`), lalu deploy ulang.
+4. Tiap pengguna membuka dashboard → **Dompet → Hubungkan WhatsApp → Buat kode penautan**, lalu mengirim `hubungkan KODE` dari WhatsApp-nya ke nomor bot. Nomor yang belum tertaut tidak bisa mencatat.
+
+Format pesan:
+
+- `keluar 25000 makan siang`, `masuk 2jt gaji`, `keluar 50rb bensin #transport`
+- Kata kunci: `keluar`/`beli`/`bayar` = pengeluaran; `masuk`/`terima`/`gaji` = pemasukan. Tanpa kata kunci, tipe ditebak seperti di bot Telegram.
+- Nominal: `25000`, `25.000`, `25rb`, `25k`, `2jt`, `1,5jt`.
+- Kategori dari hashtag (`#makan`, `#transport`, `#belanja`, `#tagihan`, `#hiburan`, `#kesehatan`, `#pendidikan`, `#gaji`, `#freelance`, `#bonus`) atau ditebak dari keterangan; default Lainnya.
+- `saldo` = ringkasan bulan ini, `hapus` = hapus transaksi terakhir yang dicatat lewat WhatsApp, `bantuan` = daftar perintah.
+
+Transaksi disimpan ke dompet pertama di daftar dompet. Webhook menolak permintaan tanpa header `X-Webhook-Signature` yang cocok, mengabaikan pesan grup dan pesan dari bot sendiri.
+
+Uji webhook secara lokal (API berjalan di port 8000 dengan dua variabel `WASENDER_*` terisi):
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/whatsapp/webhook \
+  -H "Content-Type: application/json" -H "X-Webhook-Signature: $WASENDER_WEBHOOK_SECRET" \
+  -d '{"event":"messages.received","data":{"messages":{"key":{"id":"TES1","fromMe":false,"remoteJid":"6281234567890@s.whatsapp.net","cleanedSenderPn":"6281234567890"},"messageBody":"keluar 25rb makan siang"}}}'
+```
+
 ## Docker dan Produksi
 
 ```bash

@@ -178,6 +178,27 @@ def apply_bot_mutation(telegram_id: int, mutation) -> tuple[dict[str, Any], Any]
         return state, result
 
 
+def apply_account_mutation(account_id: int, mutation) -> tuple[dict[str, Any], Any]:
+    from .database import SessionLocal, engine
+
+    with SessionLocal() as db:
+        if engine.dialect.name == "sqlite":
+            db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+            account = db.get(Account, account_id)
+        else:
+            account = db.scalar(select(Account).where(Account.id == account_id).with_for_update())
+        if account is None:
+            raise ValueError("Akun tidak ditemukan")
+        state = state_of(account)
+        before = account.state_json
+        result = mutation(state)
+        account.state_json = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
+        if account.state_json != before:
+            account.revision += 1
+        db.commit()
+        return state, result
+
+
 def read_bot_state(telegram_id: int) -> dict[str, Any]:
     from .database import SessionLocal
 
