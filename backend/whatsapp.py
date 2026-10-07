@@ -44,8 +44,12 @@ UNKNOWN_TEXT = "⚠️ Format belum dikenali karena nominalnya tidak terbaca.\nC
 UNLINKED_TEXT = "Nomor ini belum terhubung ke akun Doctor Money. Buka dashboard → Dompet → Hubungkan WhatsApp, buat kode, lalu kirim *hubungkan KODE* ke nomor ini."
 
 
+def api_key() -> str:
+    return (os.getenv("WASENDER_API_KEY") or os.getenv("WASENDER_API") or "").strip()
+
+
 def configured() -> bool:
-    return bool(os.getenv("WASENDER_API_KEY", "").strip() and os.getenv("WASENDER_WEBHOOK_SECRET", "").strip())
+    return bool(api_key() and os.getenv("WASENDER_WEBHOOK_SECRET", "").strip())
 
 
 def bot_number() -> str:
@@ -214,7 +218,7 @@ def link_number(db: Session, number: str, code: str) -> str:
 async def send_text(number: str, text: str) -> None:
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-            response = await client.post(SEND_URL, headers={"Authorization": "Bearer " + os.getenv("WASENDER_API_KEY", "").strip()}, json={"to": "+" + number, "text": text})
+            response = await client.post(SEND_URL, headers={"Authorization": "Bearer " + api_key()}, json={"to": "+" + number, "text": text})
             response.raise_for_status()
     except httpx.HTTPError:
         logger.warning("Balasan WhatsApp gagal dikirim", exc_info=True)
