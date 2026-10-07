@@ -1,5 +1,6 @@
 import base64
 import asyncio
+import binascii
 import hmac
 import json
 import logging
@@ -117,6 +118,18 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirmRequest(PasswordResetRequest):
     code: str = Field(min_length=8, max_length=8, pattern=r"^\d{8}$")
+    new_password: str = Field(min_length=12, max_length=128)
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, max_length=40)
+    email: str | None = Field(default=None, max_length=320)
+    avatar: str | None = Field(default=None, max_length=200_000)
+    current_password: str | None = Field(default=None, max_length=128)
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=12, max_length=128)
 
 
@@ -513,6 +526,100 @@ def auth_me(account: Account = Depends(current_account)) -> dict[str, Any]:
     return {"email": account.email, "telegram_linked": account.telegram_id is not None}
 
 
+AVATAR_SIGNATURES = {"jpeg": (b"\xff\xd8\xff",), "png": (b"\x89PNG\r\n\x1a\n",), "webp": (b"RIFF",)}
+
+
+def validated_avatar(value: str) -> str | None:
+    if not value:
+        return None
+    match = re.fullmatch(r"data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})", value)
+    try:
+        raw = base64.b64decode(match.group(2), validate=True) if match else b""
+    except (binascii.Error, ValueError):
+        raw = b""
+    if not match or not raw.startswith(AVATAR_SIGNATURES[match.group(1)]) or (match.group(1) == "webp" and raw[8:12] != b"WEBP"):
+        raise HTTPException(status_code=422, detail="Foto profil harus berupa gambar JPEG, PNG, atau WebP")
+    return value
+
+
+def profile_payload(account: Account) -> dict[str, Any]:
+    return {
+        "email": account.email,
+        "name": str(state_of(account).get("name") or "Sobat"),
+        "avatar": account.avatar,
+        "has_password": account.password_hash is not None,
+        "telegram_linked": account.telegram_id is not None and account.dashboard_linked,
+        "whatsapp_number": account.whatsapp_number,
+        "created_at": iso_utc(account.created_at),
+        "revision": account.revision,
+    }
+
+
+def require_current_password(account: Account, password: str | None) -> None:
+    # Only wrong guesses count: five within 15 minutes lock the check for this account.
+    key = "password-check:" + str(account.id)
+    now = time.monotonic()
+    with _rate_lock:
+        failures = [stamp for stamp in _rate_events.get(key, []) if now - stamp < 900]
+        _rate_events[key] = failures
+    if len(failures) >= 5:
+        raise HTTPException(status_code=429, detail="Terlalu banyak percobaan kata sandi. Coba lagi dalam 15 menit.")
+    if not verify_password(password or "", account.password_hash):
+        with _rate_lock:
+            _rate_events.setdefault(key, []).append(now)
+        raise HTTPException(status_code=403, detail="Kata sandi saat ini salah")
+
+
+@app.get("/api/auth/profile")
+def get_profile(account: Account = Depends(current_account)) -> dict[str, Any]:
+    return profile_payload(account)
+
+
+@app.put("/api/auth/profile")
+def update_profile(payload: ProfileUpdateRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
+    if payload.email is not None:
+        email = normalized_email(payload.email)
+        if email != account.email:
+            if account.email is None or account.password_hash is None:
+                raise HTTPException(status_code=409, detail="Akun ini belum memiliki login email. Tambahkan email dan kata sandi terlebih dahulu.")
+            require_current_password(account, payload.current_password)
+            if db.scalar(select(Account.id).where(Account.email == email)) is not None:
+                raise HTTPException(status_code=409, detail="Email sudah digunakan akun lain")
+            account.email = email
+    if payload.avatar is not None:
+        account.avatar = validated_avatar(payload.avatar)
+    if payload.name is not None:
+        name = " ".join(payload.name.split())
+        if not name or not name.isprintable():
+            raise HTTPException(status_code=422, detail="Nama tidak valid")
+        state = state_of(account)
+        if state.get("name") != name:
+            state["name"] = name
+            account.state_json = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
+            account.revision += 1
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email sudah digunakan akun lain") from exc
+    return profile_payload(account)
+
+
+@app.post("/api/auth/password")
+def change_password(payload: PasswordChangeRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
+    if account.password_hash is None:
+        raise HTTPException(status_code=409, detail="Akun ini belum memiliki kata sandi. Tambahkan login email terlebih dahulu.")
+    require_current_password(account, payload.current_password)
+    if payload.new_password == payload.current_password:
+        raise HTTPException(status_code=422, detail="Kata sandi baru harus berbeda dari kata sandi lama")
+    account.password_hash = hash_password(payload.new_password)
+    # Sign out every session, then hand this one a fresh token.
+    revoke_account_tokens(db, account.id)
+    token = issue_token(db, account)
+    db.commit()
+    return {"token": token}
+
+
 @app.post("/api/auth/logout")
 def logout(authorization: str | None = Header(default=None), db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
     scheme, _, token = (authorization or "").partition(" ")
@@ -694,4 +801,4 @@ def dashboard_page() -> FileResponse:
 if os.getenv("BOT_TOKEN"):
     @app.get("/api/config")
     def public_config() -> dict[str, bool]:
-        return {"telegram_web_app": True}
+        return {"telegram_web_app": True}

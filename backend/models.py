@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, deferred, mapped_column, relationship
 
 from .database import Base
 
@@ -15,6 +15,8 @@ class Account(Base):
     email: Mapped[str | None] = mapped_column(String(320))
     password_hash: Mapped[str | None] = mapped_column(String(255))
     whatsapp_number: Mapped[str | None] = mapped_column(String(20))
+    # Profile photo as a small data URL; deferred so ordinary requests do not load it.
+    avatar: Mapped[str | None] = deferred(mapped_column(Text))
     dashboard_linked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     state_json: Mapped[str] = mapped_column(Text, nullable=False)
     revision: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -116,4 +118,4 @@ class Payment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     proof_at: Mapped[datetime | None] = mapped_column(DateTime)
-    processed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime)

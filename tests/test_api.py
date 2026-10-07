@@ -464,3 +464,59 @@ def teardown_module():
         os.remove(_database_path)
     except FileNotFoundError:
         pass
+
+def test_profile_update_and_password_change(client, monkeypatch):
+    monkeypatch.setattr("backend.app.check_rate_limit", lambda *args, **kwargs: True)
+    signup = client.post("/api/auth/signup", json={"email": "profile@example.com", "password": "initial-long-password"})
+    token = signup.json()["token"]
+    headers = {"Authorization": "Bearer " + token}
+    other = client.post("/api/auth/signup", json={"email": "taken@example.com", "password": "another-long-password"})
+    assert other.status_code == 200
+
+    profile = client.get("/api/auth/profile", headers=headers).json()
+    assert profile["email"] == "profile@example.com" and profile["avatar"] is None
+    assert profile["has_password"] is True and profile["name"] == "Sobat" and profile["created_at"]
+    assert "password_hash" not in profile
+    assert client.get("/api/auth/profile").status_code == 401
+
+    avatar = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    updated = client.put("/api/auth/profile", headers=headers, json={"name": "  Budi  Santoso ", "avatar": avatar})
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Budi Santoso" and updated.json()["avatar"] == avatar
+    assert updated.json()["revision"] == profile["revision"] + 1
+    assert client.get("/api/state", headers=headers).json()["state"]["name"] == "Budi Santoso"
+    for bad in ("data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=", "data:image/png;base64,PHN2Zz48L3N2Zz4=", "https://example.com/a.png"):
+        assert client.put("/api/auth/profile", headers=headers, json={"avatar": bad}).status_code == 422
+    assert client.put("/api/auth/profile", headers=headers, json={"name": "   "}).status_code == 422
+    assert client.put("/api/auth/profile", headers=headers, json={"avatar": ""}).json()["avatar"] is None
+
+    assert client.put("/api/auth/profile", headers=headers, json={"email": "new@example.com"}).status_code == 403
+    assert client.put("/api/auth/profile", headers=headers, json={"email": "new@example.com", "current_password": "wrong-password"}).status_code == 403
+    assert client.put("/api/auth/profile", headers=headers, json={"email": "TAKEN@example.com", "current_password": "initial-long-password"}).status_code == 409
+    moved = client.put("/api/auth/profile", headers=headers, json={"email": " New@Example.com ", "current_password": "initial-long-password"})
+    assert moved.status_code == 200 and moved.json()["email"] == "new@example.com"
+
+    other_session = client.post("/api/auth/login", json={"email": "new@example.com", "password": "initial-long-password"}).json()["token"]
+    wrong = client.post("/api/auth/password", headers=headers, json={"current_password": "wrong-password", "new_password": "replacement-long-password"})
+    assert wrong.status_code == 403
+    assert client.post("/api/auth/password", headers=headers, json={"current_password": "initial-long-password", "new_password": "short"}).status_code == 422
+    assert client.post("/api/auth/password", headers=headers, json={"current_password": "initial-long-password", "new_password": "initial-long-password"}).status_code == 422
+    changed = client.post("/api/auth/password", headers=headers, json={"current_password": "initial-long-password", "new_password": "replacement-long-password"})
+    assert changed.status_code == 200
+    new_headers = {"Authorization": "Bearer " + changed.json()["token"]}
+    assert client.get("/api/auth/profile", headers=headers).status_code == 401
+    assert client.get("/api/auth/profile", headers={"Authorization": "Bearer " + other_session}).status_code == 401
+    assert client.get("/api/auth/profile", headers=new_headers).status_code == 200
+    assert client.post("/api/auth/login", json={"email": "new@example.com", "password": "initial-long-password"}).status_code == 401
+    assert client.post("/api/auth/login", json={"email": "new@example.com", "password": "replacement-long-password"}).status_code == 200
+
+    # Repeated wrong guesses of the current password are throttled per account.
+    statuses = [client.post("/api/auth/password", headers=new_headers, json={"current_password": "wrong-password", "new_password": "yet-another-long-password"}).status_code for _ in range(3)]
+    assert statuses == [403, 403, 429]
+    assert client.post("/api/auth/password", headers=new_headers, json={"current_password": "replacement-long-password", "new_password": "yet-another-long-password"}).status_code == 429
+
+    anonymous_token, _ = account(client)
+    anonymous = {"Authorization": "Bearer " + anonymous_token}
+    assert client.get("/api/auth/profile", headers=anonymous).json()["has_password"] is False
+    assert client.post("/api/auth/password", headers=anonymous, json={"current_password": "whatever-password", "new_password": "replacement-long-password"}).status_code == 409
+    assert client.put("/api/auth/profile", headers=anonymous, json={"email": "anon@example.com"}).status_code == 409

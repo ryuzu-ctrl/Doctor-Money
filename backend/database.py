@@ -66,8 +66,10 @@ def migrate_auth_schema(target_engine=engine) -> None:
             connection.execute(text("ALTER TABLE accounts ADD COLUMN password_hash VARCHAR(255)"))
         if "whatsapp_number" not in columns:
             connection.execute(text("ALTER TABLE accounts ADD COLUMN whatsapp_number VARCHAR(20)"))
+        if "avatar" not in columns:
+            connection.execute(text("ALTER TABLE accounts ADD COLUMN avatar TEXT"))
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_email ON accounts (email)"))
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_whatsapp_number ON accounts (whatsapp_number)"))
         if target_engine.dialect.name == "postgresql":
             for table in ("accounts", "api_tokens", "pair_codes", "password_resets", "whatsapp_link_codes"):
-                connection.execute(text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
+                connection.execute(text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))

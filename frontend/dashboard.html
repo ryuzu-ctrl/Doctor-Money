@@ -60,7 +60,9 @@ button{font-family:inherit}
 .top{display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
 .wm{font:600 16px var(--display);letter-spacing:-.01em}.wm b{color:var(--accent);font-weight:600}
-.avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:linear-gradient(145deg,rgba(79,227,230,.35),rgba(124,92,255,.35));color:var(--fg);font:700 15px var(--display);cursor:pointer}
+.avatar{width:40px;height:40px;padding:0;overflow:hidden;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:linear-gradient(145deg,rgba(79,227,230,.35),rgba(124,92,255,.35));color:var(--fg);font:700 15px var(--display);cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar.lg{width:76px;height:76px;font-size:28px;cursor:default}
 .hello{margin:18px 0 10px;font:600 26px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
 .nm{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;border-bottom:1px dashed rgba(79,227,230,.5)}
 .name-in{width:9ch;min-width:7ch;background:rgba(255,255,255,.08);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font:inherit;padding:0 8px}
@@ -319,6 +321,13 @@ select.field option{background:#0f1633;color:var(--fg)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row2>div{min-width:0}
 .actions{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
+.acct-head{display:flex;align-items:center;gap:14px}
+.acct-head .stack{gap:2px;align-items:flex-start}
+.acct-sec{margin:8px 0 0;font:600 15px var(--display)}
+.kv{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--muted);flex:none}
+.kv b{font-weight:600;text-align:right;overflow-wrap:anywhere}
 
 /* toast */
 .toast{position:absolute;z-index:60;left:16px;right:16px;bottom:100px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(18,28,62,.94);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,12,.5);font-size:13px}
@@ -409,6 +418,18 @@ select.field option{background:#0f1633;color:var(--fg)}
         <button type="submit" class="btn primary" id="asave">Simpan</button>
       </div>
     </form>
+  </div>
+
+  <div class="sheet-wrap" id="acctsheet" hidden>
+    <div class="backdrop" data-act="acctClose"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="acct-title">
+      <div class="grab"></div>
+      <div class="sheet-head">
+        <div><span class="eyebrow">Akun</span><h2 id="acct-title">Pengaturan akun</h2></div>
+        <button type="button" class="x" data-act="acctClose" aria-label="Tutup" id="acxbtn"></button>
+      </div>
+      <div class="stack" id="acctBody"></div>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" hidden></div>
@@ -598,8 +619,8 @@ function load(){try{var j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isAr
 var legacyState=load();
 var requestedPlan=new URLSearchParams(window.location.search).get('plan');
 if(!['monthly','six_months','annual'].includes(requestedPlan))requestedPlan='';
-var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null});
-var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,waStatus=null,waCode='',waTimer=null,accountEmail='',authMode='login',authMessage='',authBusy=false,showAuth=false,resetEmail='',resetMethod='email',syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false;
+var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,acct:null});
+var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,waStatus=null,waCode='',waTimer=null,accountEmail='',authMode='login',authMessage='',authBusy=false,showAuth=false,resetEmail='',resetMethod='email',syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false,profile=null;
 function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
 function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
 function apiRequest(path,options){options=options||{};options.headers=Object.assign({'Content-Type':'application/json'},options.headers||{});if(apiToken)options.headers.Authorization='Bearer '+apiToken;return fetch(API_BASE_URL+path,options).then(async function(response){var body={};try{body=await response.json();}catch(e){}if(!response.ok){var error=new Error(body.detail||'Layanan data belum tersedia');error.status=response.status;throw error;}return body;});}
@@ -648,7 +669,8 @@ async function boot(){
     var remote;
     try{proStatus=await apiRequest('/api/pro/status');}
     catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';apiReady=false;showAuth=true;render(false);return;}
-    try{accountEmail=(await apiRequest('/api/auth/me')).email||'';}catch(error){if(error.status===401)throw error;}
+    try{profile=await apiRequest('/api/auth/profile');accountEmail=profile.email||'';}
+    catch(error){if(error.status===401)throw error;profile=null;try{accountEmail=(await apiRequest('/api/auth/me')).email||'';}catch(meError){if(meError.status===401)throw meError;}}
     proUnavailable=false;
     if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}
     if(offlineMode){apiReady=false;render(false);return;}
@@ -1045,7 +1067,9 @@ function proBanner(){
   var trial=proStatus.status==='trial',end=trial?proStatus.trial_ends_at:proStatus.expires_at;
   return '<section class="pro-banner"><div><b>'+ (trial?'Uji coba Pro':'Doctor Money Pro')+'</b>'+(trial?'berakhir ':'aktif sampai ')+proDate(end)+'</div><button type="button" data-act="proplans">Lihat paket</button></section>';
 }
-function topbar(){return '<header class="top"><a class="brand" href="/" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a>'+(apiToken?'<button type="button" class="avatar" data-act="name" aria-label="Ubah nama panggilan">'+esc((S.name||'S').charAt(0).toUpperCase())+'</button>':'<button type="button" class="btn primary sm" data-act="authLogin">Masuk / Daftar</button>')+'</header>'+proBanner();}
+function accountName(){return apiReady||offlineMode?S.name:(profile&&profile.name)||S.name;}
+function avatarInner(src){if(src===undefined)src=profile&&profile.avatar;return src?'<img src="'+esc(src)+'" alt="">':esc((accountName()||'S').charAt(0).toUpperCase());}
+function topbar(){return '<header class="top"><a class="brand" href="/" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a>'+(apiToken?'<button type="button" class="avatar" data-act="account" aria-label="Pengaturan akun">'+avatarInner()+'</button>':'<button type="button" class="btn primary sm" data-act="authLogin">Masuk / Daftar</button>')+'</header>'+proBanner();}
 function monthSw(){
   var isC=S.ym===curYM(),minYM=shiftYM(curYM(),-12);
   return '<div class="month"><button type="button" data-act="mprev" aria-label="Bulan sebelumnya"'+(S.ym<=minYM?' disabled':'')+'>'+ic('left',18)+'</button><span>'+ymLabel(S.ym)+'</span><button type="button" data-act="mnext" aria-label="Bulan berikutnya"'+(isC?' disabled':'')+'>'+ic('right',18)+'</button></div>';
@@ -1221,7 +1245,7 @@ var VIEWS={
   '<section class="panel glass" aria-labelledby="h-w"><div class="panel-h"><h2 id="h-w">Daftar Dompet</h2><span class="aside">Ketuk untuk ubah saldo awal</span></div>'+cards+'</section>'+
   '<section class="panel glass" aria-labelledby="h-account"><div class="panel-h"><h2 id="h-account">Akun</h2></div>'+
    (!apiToken?'<p class="aside">Mode lokal aktif. Data hanya tersimpan di browser ini.</p><button type="button" class="btn primary" data-act="authLogin">Masuk atau buat akun untuk menyinkronkan data</button>':accountEmail?'<span class="aside">'+esc(accountEmail)+'</span>':'<p class="aside">Akun lama ini belum memiliki login email. Tambahkan email dan kata sandi agar bisa masuk kembali di perangkat lain.</p><form class="stack" data-form="auth-upgrade"><div><label class="lbl" for="upgradeEmail">Email</label><input class="field" id="upgradeEmail" type="email" inputmode="email" maxlength="320" required></div><div><label class="lbl" for="upgradePassword">Kata sandi (minimal 12 karakter)</label><input class="field" id="upgradePassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div><button type="submit" class="btn primary">Tambah login email</button></form>')+
-   (apiToken?'<button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'')+'</section>'+
+   (apiToken?'<button type="button" class="btn" data-act="account">Pengaturan akun</button><button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'')+'</section>'+
   '<section class="panel glass" aria-labelledby="h-link"><div class="panel-h"><h2 id="h-link">Hubungkan Telegram</h2><span class="aside">'+(offlineMode?'Mode lokal':linkedTelegram?'Terhubung':'Belum terhubung')+'</span></div>'+
    (!accountEmail?'<p class="aside">Hubungkan email terlebih dahulu. Di bot Telegram, jalankan /hubungkan lalu masukkan kode yang diberikan.</p>':offlineMode?'<p class="aside">Perubahan hanya tersimpan di browser ini dan tidak disinkronkan ke bot.</p><button type="button" class="btn primary" data-act="reconnect">Sambungkan ke akun server</button>':linkedTelegram?'<button type="button" class="btn" data-act="unlinkTelegram">Putuskan akun</button>':'<p class="aside">Jalankan <b>/hubungkan</b> di bot Doctor Money, lalu masukkan kode sekali pakai di sini. Kode berlaku 10 menit.</p><form class="row2" data-form="telegram-link"><div><label class="lbl" for="linkCode">Kode dari bot (8 angka)</label><input class="field" id="linkCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div><button type="submit" class="btn primary">Hubungkan</button></form>')+'</section>'+
   whatsappHTML()+
@@ -1254,6 +1278,7 @@ function initNav(){
   $('#fab').innerHTML=ic('plus',26);
   $('#xbtn').innerHTML=ic('close',18);
   $('#axbtn').innerHTML=ic('close',18);
+  $('#acxbtn').innerHTML=ic('close',18);
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
@@ -1427,7 +1452,123 @@ async function saveAsset(){
 function saveName(){
   if(!S.editName)return;
   var i=$('#nameIn'),v=i?i.value.trim():'';
-  S.name=v||'Sobat';S.editName=false;persist();render();
+  S.name=v||'Sobat';if(profile)profile.name=S.name;S.editName=false;persist();render();
+}
+/* ---------- account settings ---------- */
+function acctMsg(sel,text){var el=$(sel);if(!el)return;el.textContent=text||'';el.hidden=!text;}
+function paintAvatar(){
+  var a=S.acct;if(!a||!$('#acctAv'))return;
+  var src=a.avatar===undefined?(profile&&profile.avatar):a.avatar;
+  $('#acctAv').innerHTML=avatarInner(src||'');
+  $('#acctNoPhoto').hidden=!src;
+}
+function renderAccount(){
+  var p=profile||{},st=proStatus||{};
+  var pro=st.status==='trial'&&st.active?'Uji coba hingga '+proDate(st.trial_ends_at):st.active?'Aktif hingga '+proDate(st.expires_at):'Tidak aktif';
+  $('#acctBody').innerHTML=
+   '<form class="stack" data-form="account-profile" novalidate>'+
+    '<div class="acct-head"><span class="avatar lg" id="acctAv"></span><div class="stack"><button type="button" class="btn sm" data-act="acctPick">Ubah foto profil</button><button type="button" class="linkbtn" data-act="acctNoPhoto" id="acctNoPhoto" hidden>Hapus foto</button><input type="file" id="acctFile" accept="image/png,image/jpeg,image/webp" hidden></div></div>'+
+    '<div><label class="lbl" for="acctName">Nama panggilan</label><input class="field" id="acctName" maxlength="16" autocomplete="nickname" value="'+esc(accountName()||'')+'"></div>'+
+    (p.email&&p.has_password?
+     '<div><label class="lbl" for="acctEmail">Email</label><input class="field" id="acctEmail" type="email" inputmode="email" maxlength="320" autocomplete="email" value="'+esc(p.email)+'"></div>'+
+     '<div id="acctEmailPwBox" hidden><label class="lbl" for="acctEmailPw">Kata sandi saat ini (untuk mengganti email)</label><input class="field" id="acctEmailPw" type="password" maxlength="128" autocomplete="current-password"></div>'
+     :'<p class="aside">Akun ini belum memiliki login email. Tambahkan email dan kata sandi di tab Dompet.</p>')+
+    '<p class="pv-err" id="acctProfileMsg" role="alert" hidden></p>'+
+    '<button type="submit" class="btn primary">Simpan profil</button>'+
+   '</form>'+
+   '<h3 class="acct-sec">Detail akun</h3>'+
+   '<div>'+
+    '<div class="kv"><span>Email</span><b>'+esc(p.email||'Belum ditambahkan')+'</b></div>'+
+    '<div class="kv"><span>Bergabung</span><b>'+esc(proDate(p.created_at))+'</b></div>'+
+    '<div class="kv"><span>Doctor Money Pro</span><b>'+esc(pro)+'</b></div>'+
+    '<div class="kv"><span>Telegram</span><b>'+(p.telegram_linked?'Terhubung':'Belum terhubung')+'</b></div>'+
+    '<div class="kv"><span>WhatsApp</span><b>'+(p.whatsapp_number?'+'+esc(p.whatsapp_number):'Belum terhubung')+'</b></div>'+
+   '</div>'+
+   (p.has_password?
+    '<h3 class="acct-sec">Ubah kata sandi</h3>'+
+    '<form class="stack" data-form="account-password" novalidate>'+
+     '<div><label class="lbl" for="acctPwOld">Kata sandi lama</label><input class="field" id="acctPwOld" type="password" maxlength="128" autocomplete="current-password"></div>'+
+     '<div><label class="lbl" for="acctPwNew">Kata sandi baru (minimal 12 karakter)</label><input class="field" id="acctPwNew" type="password" maxlength="128" autocomplete="new-password"></div>'+
+     '<div><label class="lbl" for="acctPwNew2">Ulangi kata sandi baru</label><input class="field" id="acctPwNew2" type="password" maxlength="128" autocomplete="new-password"></div>'+
+     '<p class="pv-err" id="acctPwMsg" role="alert" hidden></p>'+
+     '<button type="submit" class="btn">Ubah kata sandi</button>'+
+    '</form>':'')+
+   '<button type="button" class="btn dangerb" data-act="logout">Keluar dari akun</button>';
+  paintAvatar();
+}
+async function openAccount(){
+  if(!apiToken)return;
+  S.acct={avatar:undefined,busy:false};
+  var el=$('#acctsheet');el.hidden=false;
+  if(profile)renderAccount();else $('#acctBody').innerHTML='<div class="empty">Memuat detail akun…</div>';
+  requestAnimationFrame(function(){el.classList.add('open');$('#acxbtn').focus({preventScroll:true});});
+  if(profile)return;
+  try{profile=await apiRequest('/api/auth/profile');accountEmail=profile.email||'';if(S.acct)renderAccount();}
+  catch(error){if(S.acct)$('#acctBody').innerHTML='<div class="empty">'+esc(error.message||'Detail akun belum dapat dimuat.')+'</div>';}
+}
+function closeAccount(){
+  var el=$('#acctsheet');el.classList.remove('open');S.acct=null;
+  setTimeout(function(){if(!S.acct){el.hidden=true;$('#acctBody').innerHTML='';}},230);
+}
+function pickAvatar(file){
+  if(!file||!S.acct)return;
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>15*1024*1024){acctMsg('#acctProfileMsg','Pilih gambar JPEG, PNG, atau WebP berukuran maksimal 15 MB.');return;}
+  var url=URL.createObjectURL(file),img=new Image();
+  img.onload=function(){
+    // Crop to a centred square and shrink so the photo stays a few dozen KB.
+    var side=Math.min(img.naturalWidth,img.naturalHeight),c=document.createElement('canvas'),x=c.getContext('2d');
+    c.width=c.height=256;x.fillStyle='#141c3c';x.fillRect(0,0,256,256);
+    x.drawImage(img,(img.naturalWidth-side)/2,(img.naturalHeight-side)/2,side,side,0,0,256,256);
+    URL.revokeObjectURL(url);
+    if(!S.acct)return;
+    S.acct.avatar=c.toDataURL('image/jpeg',.85);acctMsg('#acctProfileMsg','');paintAvatar();
+  };
+  img.onerror=function(){URL.revokeObjectURL(url);acctMsg('#acctProfileMsg','Gambar tidak dapat dibaca. Coba berkas lain.');};
+  img.src=url;
+}
+async function saveAccountProfile(f){
+  var a=S.acct;if(!a||a.busy||!profile)return;
+  var name=$('#acctName').value.trim().replace(/\s+/g,' '),emailEl=$('#acctEmail'),email=emailEl?emailEl.value.trim().toLowerCase():'',payload={},submit=f.querySelector('[type="submit"]');
+  if(!name){acctMsg('#acctProfileMsg','Nama panggilan tidak boleh kosong.');$('#acctName').focus();return;}
+  if(emailEl&&email!==profile.email){
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){acctMsg('#acctProfileMsg','Alamat email tidak valid.');emailEl.focus();return;}
+    if(!$('#acctEmailPw').value){$('#acctEmailPwBox').hidden=false;acctMsg('#acctProfileMsg','Masukkan kata sandi saat ini untuk mengganti email.');$('#acctEmailPw').focus();return;}
+    payload.email=email;payload.current_password=$('#acctEmailPw').value;
+  }
+  if(a.avatar!==undefined)payload.avatar=a.avatar;
+  // A synced dashboard saves the name with the rest of its state; otherwise the server stores it.
+  if(!apiReady&&name!==profile.name)payload.name=name;
+  a.busy=true;submit.disabled=true;submit.textContent='Menyimpan…';acctMsg('#acctProfileMsg','');
+  try{
+    if(Object.keys(payload).length){profile=await apiRequest('/api/auth/profile',{method:'PUT',body:JSON.stringify(payload)});accountEmail=profile.email||'';}
+    profile.name=name;
+    if(name!==S.name&&(apiReady||offlineMode)){S.name=name;persist();}
+    a.busy=false;a.avatar=undefined;
+    render();if(S.acct===a)renderAccount();
+    toast('Profil diperbarui.');
+  }catch(error){
+    a.busy=false;
+    if(S.acct===a){submit.disabled=false;submit.textContent='Simpan profil';acctMsg('#acctProfileMsg',error.message||'Profil belum dapat disimpan.');}
+  }
+}
+async function saveAccountPassword(f){
+  var a=S.acct;if(!a||a.busy)return;
+  var oldPw=$('#acctPwOld').value,newPw=$('#acctPwNew').value,submit=f.querySelector('[type="submit"]');
+  if(!oldPw){acctMsg('#acctPwMsg','Masukkan kata sandi lama.');$('#acctPwOld').focus();return;}
+  if(newPw.length<12){acctMsg('#acctPwMsg','Kata sandi baru harus memiliki minimal 12 karakter.');$('#acctPwNew').focus();return;}
+  if(newPw!==$('#acctPwNew2').value){acctMsg('#acctPwMsg','Pengulangan kata sandi baru tidak sama.');$('#acctPwNew2').focus();return;}
+  if(newPw===oldPw){acctMsg('#acctPwMsg','Kata sandi baru harus berbeda dari kata sandi lama.');$('#acctPwNew').focus();return;}
+  a.busy=true;submit.disabled=true;submit.textContent='Memproses…';acctMsg('#acctPwMsg','');
+  try{
+    // Let queued saves finish first: they still carry the token this call replaces.
+    await syncQueue;
+    var result=await apiRequest('/api/auth/password',{method:'POST',body:JSON.stringify({current_password:oldPw,new_password:newPw})});
+    apiToken=result.token;localStorage.setItem(SESSION_KEY,apiToken);
+    if(S.acct===a)f.reset();
+    toast('Kata sandi diubah. Perangkat lain perlu masuk kembali.');
+  }catch(error){if(S.acct===a)acctMsg('#acctPwMsg',error.message||'Kata sandi belum dapat diubah.');}
+  a.busy=false;
+  if(S.acct===a){submit.disabled=false;submit.textContent='Ubah kata sandi';}
 }
 async function createProOrder(planId){
   if(proOrderBusy)return;
@@ -1455,9 +1596,10 @@ var ACT={
    if(offlineMode)throw new Error('Sambungkan kembali ke server sebelum keluar agar perubahan lokal tidak hilang.');
    if(apiReady){await syncQueue;await writeState(stateSnapshot());}
    await apiRequest('/api/auth/logout',{method:'POST'});
+   if(S.acct)closeAccount();profile=null;
    apiToken='';apiReady=false;offlineMode=false;accountEmail='';linkedTelegram=false;waStatus=null;waCode='';proStatus=null;proUnavailable=false;showAuth=false;authMode='login';authMessage='';legacyState=null;
    [SESSION_KEY,KEY,BASE_KEY,OFFLINE_KEY].forEach(function(key){localStorage.removeItem(key);});
-   Object.assign(S,defaults(),{tab:'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,preferences:{timezone:'Asia/Jakarta'},reminders:[],watchlist:[],alerts:[],portfolio:[]});
+   Object.assign(S,defaults(),{tab:'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,acct:null,preferences:{timezone:'Asia/Jakarta'},reminders:[],watchlist:[],alerts:[],portfolio:[]});
    render(false);
   }catch(error){toast(error.message||'Tidak dapat keluar dari akun.');}
  },
@@ -1469,6 +1611,9 @@ var ACT={
  mnext:function(){if(S.ym<curYM()){S.ym=shiftYM(S.ym,1);S.edit=null;render();}},
  add:function(){if(S.tab==='aset')openAsset(S.aflt==='all'?'':S.aflt);else openSheet();},close:closeSheet,
  aadd:function(g){openAsset(g);},aclose:closeAsset,
+ account:openAccount,acctClose:closeAccount,
+ acctPick:function(){var i=$('#acctFile');if(i){i.value='';i.click();}},
+ acctNoPhoto:function(){if(S.acct){S.acct.avatar='';paintAvatar();}},
  akind:function(g){if(!S.asheet||!KIND[g])return;S.asheet.kind=g;renderAssetForm();updateAsset();},
  aex:function(g){$('#acode').value=g;updateAsset();$('#aqty').focus();},
  aflt:function(g){S.aflt=g;S.edit=null;render();},
@@ -1587,9 +1732,11 @@ document.addEventListener('submit',function(e){
   if(f.dataset.form==='auth-upgrade'){
     var upgradeEmail=$('#upgradeEmail').value.trim(),upgradePassword=$('#upgradePassword').value,upgradeSubmit=f.querySelector('[type="submit"]');
     upgradeSubmit.disabled=true;
-    registerEmail(upgradeEmail,upgradePassword).then(function(result){apiToken=result.token;localStorage.setItem(SESSION_KEY,apiToken);accountEmail=result.email||upgradeEmail;render();toast('Login email berhasil ditambahkan.');}).catch(function(error){toast(error.message||'Tidak dapat menambahkan login email.');}).finally(function(){upgradeSubmit.disabled=false;});
+    registerEmail(upgradeEmail,upgradePassword).then(function(result){apiToken=result.token;localStorage.setItem(SESSION_KEY,apiToken);accountEmail=result.email||upgradeEmail;profile=null;render();toast('Login email berhasil ditambahkan.');}).catch(function(error){toast(error.message||'Tidak dapat menambahkan login email.');}).finally(function(){upgradeSubmit.disabled=false;});
     return;
   }
+  if(f.dataset.form==='account-profile'){saveAccountProfile(f);return;}
+  if(f.dataset.form==='account-password'){saveAccountPassword(f);return;}
   if(f.id==='addForm'){saveSheet();return;}
   if(f.id==='assetForm'){saveAsset();return;}
   if(f.dataset.form==='asset'){
@@ -1611,7 +1758,8 @@ document.addEventListener('submit',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
-    if(S.sheet)closeSheet();
+    if(S.acct)closeAccount();
+    else if(S.sheet)closeSheet();
     else if(S.asheet)closeAsset();
     else if(S.edit||S.editName){S.edit=null;S.editName=false;render();}
   }
@@ -1623,10 +1771,12 @@ document.addEventListener('input',function(e){
   if(e.target.id==='q'){S.q=e.target.value;$('#txList').innerHTML=txListHTML();}
   if(e.target.id==='dxCut'){diagnoseCutPct=+e.target.value;updateDiagnoseScenario();}
   if(/^(acode|aqty|abuy|anow)$/.test(e.target.id))updateAsset();
+  if(e.target.id==='acctEmail'&&profile)$('#acctEmailPwBox').hidden=e.target.value.trim().toLowerCase()===profile.email;
 });
 document.addEventListener('change',function(e){
   if(e.target.id==='qwallet'&&S.sheet){S.sheet.wallet=e.target.value;updateSheet();}
   if(e.target.id==='qdate'&&S.sheet){S.sheet.date=e.target.value;}
+  if(e.target.id==='acctFile')pickAvatar(e.target.files&&e.target.files[0]);
 });
 function pickDay(e){
   var svg=e.target.closest&&e.target.closest('#c7');if(!svg)return;
@@ -1646,4 +1796,4 @@ boot();
 })();
 </script>
 
-</body></html>
+</body></html>
