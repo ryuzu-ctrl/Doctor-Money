@@ -50,7 +50,10 @@ def test_resolve_database_url_preserves_stronger_supabase_sslmode(monkeypatch):
     )
     monkeypatch.setenv("DATABASE_URL", configured)
 
-    assert resolve_database_url() == configured
+    resolved = make_url(resolve_database_url())
+
+    assert resolved.drivername == "postgresql+psycopg"
+    assert resolved.query["sslmode"] == "verify-full"
 
 
 def test_auth_schema_migration_adds_credentials_to_existing_accounts(tmp_path):

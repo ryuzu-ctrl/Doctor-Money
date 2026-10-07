@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend ./backend
 COPY bot ./bot
 COPY frontend ./frontend
+COPY start.sh ./start.sh
 
 EXPOSE 8000
-CMD ["python", "-m", "bot.main"]
+CMD ["sh", "start.sh"]
