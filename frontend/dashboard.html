@@ -50,6 +50,14 @@ button{font-family:inherit}
 .pro-order h2{margin:0;font:600 16px var(--display)}
 .pro-order b{color:var(--fg)}
 .pro-note{font-size:12.5px;color:var(--muted)}
+.pay-box{padding:14px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.pay-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pay-row>span:first-child{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.pay-row>span:last-child{display:flex;align-items:center;justify-content:flex-end;min-width:0}
+.pay-row b{font:600 15px var(--display);text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.pay-row .pay-num{font-size:20px;letter-spacing:.03em;color:var(--accent)}
+.pay-row .pay-code{font-size:13px}
+.pay-copy{border:0;background:none;color:var(--accent);font:600 12px var(--body);cursor:pointer;padding:4px 0 4px 8px;white-space:nowrap}
 .panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .panel-h h2{margin:0;font:600 17px/1.2 var(--body)}
 .aside{font-size:12.5px;color:var(--muted)}
@@ -432,6 +440,18 @@ select.field option{background:#0f1633;color:var(--fg)}
     </div>
   </div>
 
+  <div class="sheet-wrap" id="paysheet" hidden>
+    <div class="backdrop" data-act="payClose"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+      <div class="grab"></div>
+      <div class="sheet-head">
+        <div><span class="eyebrow">Pembayaran</span><h2 id="pay-title">Transfer pembayaran</h2></div>
+        <button type="button" class="x" data-act="payClose" aria-label="Tutup" id="payxbtn"></button>
+      </div>
+      <div class="stack" id="payBody"></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
 </main>
 
@@ -619,8 +639,10 @@ function load(){try{var j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isAr
 var legacyState=load();
 var requestedPlan=new URLSearchParams(window.location.search).get('plan');
 if(!['monthly','six_months','annual'].includes(requestedPlan))requestedPlan='';
-var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,acct:null});
+var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,acct:null,pay:null});
 var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,waStatus=null,waCode='',waTimer=null,accountEmail='',authMode='login',authMessage='',authBusy=false,showAuth=false,resetEmail='',resetMethod='email',syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false,profile=null;
+var requestedPlanShown=false;
+if(requestedPlan&&!apiToken)showAuth=true;
 function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
 function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
 function apiRequest(path,options){options=options||{};options.headers=Object.assign({'Content-Type':'application/json'},options.headers||{});if(apiToken)options.headers.Authorization='Bearer '+apiToken;return fetch(API_BASE_URL+path,options).then(async function(response){var body={};try{body=await response.json();}catch(e){}if(!response.ok){var error=new Error(body.detail||'Layanan data belum tersedia');error.status=response.status;throw error;}return body;});}
@@ -662,6 +684,10 @@ async function registerEmail(email,password){
   return body;
 }
 async function boot(){
+  await bootApp();
+  if(requestedPlan&&!requestedPlanShown&&apiToken&&proStatus&&!proUnavailable&&!migration&&(proStatus.plans||[]).length){requestedPlanShown=true;try{history.replaceState(null,'',window.location.pathname);}catch(e){}openPay(requestedPlan);}
+}
+async function bootApp(){
   var webApp=window.Telegram&&window.Telegram.WebApp;
   if(webApp){webApp.ready();webApp.expand();var theme=webApp.themeParams||{};if(theme.bg_color)document.documentElement.style.setProperty('--tg-theme-bg',theme.bg_color);if(theme.text_color)document.documentElement.style.setProperty('--tg-theme-text',theme.text_color);}
   if(!apiToken){apiReady=false;render(false);return;}
@@ -687,7 +713,7 @@ async function boot(){
     if(JSON.stringify(recovered)!==JSON.stringify(remote.state)){await writeState(recovered);}
     try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}
     render(false);
-    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.edit||S.editName)return;try{proStatus=await apiRequest('/api/pro/status');if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
+    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.pay||S.edit||S.editName)return;try{proStatus=await apiRequest('/api/pro/status');if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
   }catch(e){
     apiReady=false;
     if(e.status===401){apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';showAuth=true;render(false);return;}
@@ -1265,7 +1291,7 @@ var VIEWS={
   var orderPanel='';
   if(pending){
     var orderPayment=pending.payment||payment;
-    orderPanel='<section class="panel glass pro-order" aria-label="Order pembayaran"><h2>Order '+esc(pending.order_id)+'</h2><b>'+esc(pending.plan.name)+' · '+rp(pending.amount)+'</b>'+(orderPayment.configured?'<p class="pro-note">Transfer ke '+esc(orderPayment.method)+' · '+esc(orderPayment.account)+'<br>Atas nama '+esc(orderPayment.account_name)+'. Setelah transfer, hubungi admin dan sertakan kode order.</p>':'<p class="pro-note">Instruksi rekening belum dikonfigurasi. Hubungi admin Telegram dan sertakan kode order ini.</p>')+'<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a><button type="button" class="btn primary" data-act="procheck">Periksa status</button></div></section>';
+    orderPanel='<section class="panel glass pro-order" aria-label="Order pembayaran"><h2>Order '+esc(pending.order_id)+'</h2><b>'+esc(pending.plan.name)+' · '+rp(pending.amount)+'</b>'+(orderPayment.configured?'<p class="pro-note">Transfer ke '+esc(orderPayment.method)+' · '+esc(orderPayment.account)+'<br>Atas nama '+esc(orderPayment.account_name)+'. Setelah transfer, hubungi admin dan sertakan kode order.</p>':'<p class="pro-note">Instruksi rekening belum dikonfigurasi. Hubungi admin Telegram dan sertakan kode order ini.</p>')+'<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a><button type="button" class="btn primary" data-act="procheck">Periksa status</button></div><button type="button" class="btn" data-act="proorder" data-arg="'+esc(pending.plan.id)+'">Lihat rekening pembayaran</button></section>';
   }
   return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&proStatus.active?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'')+(apiToken?'<button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'');
  }
@@ -1279,6 +1305,7 @@ function initNav(){
   $('#xbtn').innerHTML=ic('close',18);
   $('#axbtn').innerHTML=ic('close',18);
   $('#acxbtn').innerHTML=ic('close',18);
+  $('#payxbtn').innerHTML=ic('close',18);
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
@@ -1570,12 +1597,36 @@ async function saveAccountPassword(f){
   a.busy=false;
   if(S.acct===a){submit.disabled=false;submit.textContent='Ubah kata sandi';}
 }
+function payHTML(){
+  var p=S.pay,status=proStatus||{},order=p.order,plan=order?order.plan:(status.plans||[]).filter(function(x){return x.id===p.plan;})[0]||{},payment=(order&&order.payment)||status.payment||{};
+  var row=function(label,value,cls,copy){return '<div class="pay-row"><span>'+label+'</span><span><b'+(cls?' class="'+cls+'"':'')+'>'+value+'</b>'+(copy?'<button type="button" class="pay-copy" data-act="payCopy" data-arg="'+esc(copy)+'">Salin</button>':'')+'</span></div>';};
+  var bank=payment.configured?'<div class="pay-box">'+row('Metode',esc(payment.method))+row('No. rekening',esc(payment.account),'pay-num',payment.account)+row('Atas nama',esc(payment.account_name))+'</div>':'<div class="empty">Nomor rekening belum tersedia. Hubungi admin dan sertakan kode order Anda.</div>';
+  var code=order?row('Kode order',esc(order.order_id),'pay-code',order.order_id):p.error?'<div class="pay-row"><span>Kode order</span><button type="button" class="pay-copy" data-act="payRetry">Coba lagi</button></div>':row('Kode order','Membuat order…');
+  return '<div class="pay-box">'+row('Paket',esc(plan.name||''))+row('Total transfer',rp(order?order.amount:plan.price||0),'pay-num')+code+'</div>'+bank+(p.error?'<p class="pro-note" role="alert">'+esc(p.error)+'</p>':'')+'<p class="pro-note">Transfer sesuai total di atas, lalu hubungi admin dan sertakan kode order. Paket aktif setelah pembayaran diverifikasi.</p><div class="actions"><button type="button" class="btn" data-act="payClose">Tutup</button><a class="btn primary" style="display:grid;place-items:center;text-decoration:none" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a></div>';
+}
+function renderPay(){if(S.pay)$('#payBody').innerHTML=payHTML();}
+function openPay(planId){
+  var pending=proStatus&&proStatus.pending_order;
+  S.pay={plan:planId,order:pending&&pending.plan.id===planId?pending:null,error:''};
+  var el=$('#paysheet');el.hidden=false;renderPay();
+  requestAnimationFrame(function(){el.classList.add('open');$('#payxbtn').focus({preventScroll:true});});
+  createProOrder(planId);
+}
+function closePay(){
+  var el=$('#paysheet');el.classList.remove('open');S.pay=null;
+  setTimeout(function(){if(!S.pay){el.hidden=true;$('#payBody').innerHTML='';}},230);
+}
 async function createProOrder(planId){
   if(proOrderBusy)return;
   proOrderBusy=true;render();
-  try{var order=await apiRequest('/api/pro/orders',{method:'POST',body:JSON.stringify({plan_id:planId})});proStatus.pending_order=order;S.tab='pro';}
-  catch(error){toast(error.message);}
-  proOrderBusy=false;render(false);
+  if(S.pay&&S.pay.plan===planId){S.pay.error='';renderPay();}
+  try{var order=await apiRequest('/api/pro/orders',{method:'POST',body:JSON.stringify({plan_id:planId})});proStatus.pending_order=order;S.tab='pro';if(S.pay&&S.pay.plan===planId)S.pay.order=order;}
+  catch(error){if(S.pay&&S.pay.plan===planId)S.pay.error=error.message||'Order belum dapat dibuat.';else toast(error.message);}
+  proOrderBusy=false;render(false);renderPay();
+}
+function copyText(text){
+  var done=function(){toast('Disalin');},fail=function(){toast('Tidak dapat menyalin. Salin secara manual.');};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fail);else fail();
 }
 async function refreshProStatus(){
   if(!apiToken){boot();return;}
@@ -1605,7 +1656,10 @@ var ACT={
  },
  proplans:function(){S.tab='pro';render(false);},
  prohome:function(){S.tab='home';render(false);},
- proorder:function(g){createProOrder(g);},
+ proorder:function(g){openPay(g);},
+ payClose:function(){closePay();},
+ payRetry:function(){if(S.pay)createProOrder(S.pay.plan);},
+ payCopy:function(g){copyText(g);},
  procheck:function(){refreshProStatus();},
  mprev:function(){var m=shiftYM(curYM(),-12);if(S.ym>m){S.ym=shiftYM(S.ym,-1);S.edit=null;render();}},
  mnext:function(){if(S.ym<curYM()){S.ym=shiftYM(S.ym,1);S.edit=null;render();}},
@@ -1758,7 +1812,8 @@ document.addEventListener('submit',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
-    if(S.acct)closeAccount();
+    if(S.pay)closePay();
+    else if(S.acct)closeAccount();
     else if(S.sheet)closeSheet();
     else if(S.asheet)closeAsset();
     else if(S.edit||S.editName){S.edit=null;S.editName=false;render();}
@@ -1796,4 +1851,4 @@ boot();
 })();
 </script>
 
-</body></html>
+</body></html>

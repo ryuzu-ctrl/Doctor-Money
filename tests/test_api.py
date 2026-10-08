@@ -455,6 +455,7 @@ def test_root_and_dashboard_routes_are_available(client):
     assert "/api/pro/status" in dashboard.text
     assert "Pilih paket" in dashboard.text
     assert 'id="addForm"' in dashboard.text
+    assert 'id="paysheet"' in dashboard.text
     assert 'href="/"' in dashboard.text
 
 
