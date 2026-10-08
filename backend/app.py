@@ -31,7 +31,7 @@ from .models import Account, PasswordReset, ProAccess, ProOrder
 from .pro import FREE_LIMIT_MESSAGE, FREE_MONTHLY_TRANSACTIONS, PRO_PLANS, activate_pro_plan, ensure_pro_access, month_counts, over_free_limit, pro_access_active, pro_payment_config
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
 from .security import InitDataError, validate_init_data
-from . import whatsapp
+from . import ai, whatsapp
 from bot.services import market
 from bot.services.finance import prepare_legacy_state
 
@@ -136,6 +136,11 @@ class PasswordChangeRequest(BaseModel):
 class StateRequest(BaseModel):
     state: dict[str, Any]
     revision: int = Field(ge=0)
+
+
+class AiAnalyzeRequest(BaseModel):
+    mode: Literal["full", "spending", "future", "savings", "goals"] = "full"
+    context: Literal["", "home", "tx", "diagnose", "bud", "aset", "wal"] = ""
 
 
 class ImportRequest(BaseModel):
@@ -651,6 +656,56 @@ async def market_assets() -> dict[str, Any]:
         return await market.yahoo_market_data()
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail="Data pasar Yahoo Finance sedang tidak tersedia. Coba muat ulang nanti.") from exc
+
+
+AI_CONTEXTS = {"home": "Beranda", "tx": "halaman Transaksi", "diagnose": "halaman Diagnose", "bud": "halaman Anggaran", "aset": "halaman Aset", "wal": "halaman Dompet"}
+AI_ERRORS = {
+    "not_configured": "Doctor Money AI belum diaktifkan di server.",
+    "busy": "Doctor Money AI sedang sibuk. Coba lagi sebentar.",
+    "provider_error": "Pemeriksaan belum berhasil. Coba lagi sebentar.",
+}
+
+
+@app.get("/api/ai/status")
+def ai_status(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
+    pro = pro_access_active(ensure_pro_access(db, account))
+    return {"configured": ai.configured(), "tier": "pro" if pro else "free", **ai.usage_payload(db, account.id, pro)}
+
+
+@app.post("/api/ai/analyze")
+def ai_analyze(payload: AiAnalyzeRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
+    pro = pro_access_active(ensure_pro_access(db, account))
+    if not pro and payload.mode not in ai.FREE_MODES:
+        raise HTTPException(status_code=402, detail="Pemeriksaan ini tersedia di Doctor Money Pro.")
+    if not check_rate_limit("ai:" + str(account.id), limit=6, window=60):
+        raise HTTPException(status_code=429, detail="Terlalu banyak pemeriksaan. Coba lagi sebentar.")
+    facts = ai.build_facts(state_of(account), payload.mode, pro, AI_CONTEXTS.get(payload.context, ""))
+    if facts is None:
+        return {"status": "no_data", "tier": "pro" if pro else "free", "usage": ai.usage_payload(db, account.id, pro)}
+    analysis = ai.cached_result(db, account, payload.mode, pro)
+    cached = analysis is not None
+    if analysis is None:
+        if ai.usage_payload(db, account.id, pro)["remaining"] <= 0:
+            if pro:
+                raise HTTPException(status_code=429, detail="Batas pemeriksaan AI bulan ini sudah tercapai. Kuota kembali penuh bulan depan.")
+            raise HTTPException(status_code=402, detail="Pemeriksaan AI kamu bulan ini sudah habis. Doctor Money Pro memberikan akses AI Financial Analysis yang lebih lengkap.")
+        try:
+            analysis = ai.generate(facts)
+        except ai.AiUnavailable as exc:
+            raise HTTPException(status_code=503, detail=AI_ERRORS.get(str(exc), AI_ERRORS["provider_error"])) from exc
+        ai.record(db, account, payload.mode, pro, analysis)
+    return {
+        "status": "ok",
+        "cached": cached,
+        "mode": payload.mode,
+        "tier": "pro" if pro else "free",
+        "month": facts["month"],
+        "score": facts["score"],
+        "label": facts["score_label"],
+        "facts": {key: facts[key] for key in ("income", "expenses", "net", "savings_ratio_percent")},
+        "analysis": analysis,
+        "usage": ai.usage_payload(db, account.id, pro),
+    }
 
 
 @app.get("/api/state")

@@ -43,6 +43,8 @@ Akun baru mendapat uji coba Pro selama 1 bulan sejak status Pro pertama kali dip
 
 Pembayaran saat ini diverifikasi manual. Isi `PRO_PAYMENT_METHOD`, `PRO_PAYMENT_ACCOUNT`, dan `PRO_PAYMENT_ACCOUNT_NAME` untuk menampilkan instruksi transfer. Tetapkan `PRO_ADMIN_SECRET` dengan nilai rahasia yang kuat dan berbeda dari `APP_SECRET`. Order tertunda dapat dilihat melalui `GET /api/admin/pro/orders`; setelah pembayaran diverifikasi, aktifkan lewat `POST /api/admin/pro/orders/{order_id}/activate` dengan header `Authorization: Bearer $PRO_ADMIN_SECRET`. Jangan kirim secret admin ke browser atau commit `.env`.
 
+Doctor Money AI adalah robot mengambang di landing page dan dashboard. Di dashboard, `POST /api/ai/analyze` meringkas data akun di server (`backend/ai.py`), lalu Claude menulis diagnosis terstruktur; skor tetap dihitung aplikasi. Set `ANTHROPIC_API_KEY` di service API. Batas per akun per bulan diatur `AI_FREE_MONTHLY_LIMIT` (bawaan 3, hanya pemeriksaan dasar) dan `AI_PRO_MONTHLY_LIMIT` (bawaan 60). Hasil untuk data yang belum berubah diambil dari tabel `ai_usage` tanpa memotong kuota.
+
 Data entitlement dan order disimpan pada tabel `pro_access` dan `pro_orders`, yang dibuat otomatis saat API mulai. Row Level Security diaktifkan pada kedua tabel saat menggunakan PostgreSQL/Supabase; akses aplikasi tetap lewat backend.
 
 ## Menu dan Data

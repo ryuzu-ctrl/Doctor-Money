@@ -50,6 +50,75 @@ button{font-family:inherit}
 .pro-order h2{margin:0;font:600 16px var(--display)}
 .pro-order b{color:var(--fg)}
 .pro-note{font-size:12.5px;color:var(--muted)}
+.lock{position:relative;overflow:hidden;padding:22px 18px 18px;display:flex;flex-direction:column;gap:14px;border-color:color-mix(in srgb,var(--c) 42%,transparent);background:linear-gradient(165deg,color-mix(in srgb,var(--c) 20%,transparent),rgba(255,255,255,.035) 58%)}
+.lock::before{content:"";position:absolute;width:260px;height:260px;right:-110px;top:-120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 45%,transparent),transparent 68%);pointer-events:none}
+.lock>*{position:relative}
+.lock-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lock-art{width:64px;height:64px;border-radius:22px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);box-shadow:0 12px 30px color-mix(in srgb,var(--c) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.25)}
+.lock-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:rgba(255,200,87,.14);border:1px solid rgba(255,200,87,.4);color:var(--warn);font:600 11.5px var(--body)}
+.lock h1{margin:2px 0 0;font:600 25px/1.18 var(--display);letter-spacing:-.01em;text-wrap:balance}
+.lock-lede{margin:0;font-size:14px;line-height:1.55;color:var(--fg);opacity:.88}
+.lock-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.lock-list li{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;font-size:13.5px;line-height:1.4}
+.lock-list .ic{flex:none;margin-top:1px;color:var(--good)}
+.lock-price{display:flex;align-items:baseline;gap:7px;color:var(--muted);font-size:13px}
+.lock-price b{font:700 24px/1 var(--display);color:var(--fg);font-variant-numeric:tabular-nums}
+.lock .btn{height:50px;font-size:15px}
+.lock-note{margin:0;text-align:center;font-size:12px;color:var(--muted)}
+/* Doctor Money AI: floating robot and its panel */
+.dmai{position:absolute;z-index:19;right:14px;bottom:98px;width:56px;height:56px;padding:0;border-radius:20px;border:1px solid rgba(79,227,230,.42);background:linear-gradient(160deg,rgba(44,66,110,.88),rgba(18,26,58,.94));color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,12,.45),inset 0 1px 0 rgba(255,255,255,.18);animation:dmai-float 4.6s ease-in-out infinite;transition:opacity .2s,transform .2s}
+.dmai::before{content:"";position:absolute;inset:-5px;border-radius:24px;border:1px solid rgba(79,227,230,.5);opacity:0;animation:dmai-glow 4.6s ease-in-out infinite;pointer-events:none}
+.dmai.away{opacity:0;transform:scale(.6);pointer-events:none;animation:none}
+.dmai-bot .dmai-eye{transform-box:fill-box;transform-origin:center;animation:dmai-blink 5.6s infinite}
+.dmai-bot .dmai-tipdot{animation:dmai-beacon 2.8s ease-in-out infinite}
+@keyframes dmai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes dmai-glow{0%,100%{opacity:0;transform:scale(.96)}50%{opacity:.55;transform:scale(1.04)}}
+@keyframes dmai-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
+@keyframes dmai-beacon{0%,100%{opacity:1}50%{opacity:.35}}
+.dmai-tip{position:absolute;z-index:19;right:78px;bottom:112px;padding:8px 12px;border-radius:14px 14px 4px 14px;background:rgba(18,28,62,.96);border:1px solid rgba(79,227,230,.35);font:600 12px var(--body);color:var(--fg);box-shadow:0 10px 24px rgba(0,0,12,.4);opacity:0;transform:translateX(6px);transition:opacity .25s,transform .25s;pointer-events:none}
+.dmai-tip.show{opacity:1;transform:none}
+.dmai-wrap{position:absolute;inset:0;z-index:35}
+.dmai-catch{position:absolute;inset:0;background:rgba(3,6,20,.42);opacity:0;transition:opacity .2s}
+.dmai-panel{position:absolute;left:14px;right:14px;bottom:98px;max-height:calc(100% - 122px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding:16px;border-radius:26px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,rgba(26,40,82,.98),rgba(12,16,42,.99));border:1px solid rgba(79,227,230,.34);box-shadow:0 24px 60px rgba(0,0,12,.6),inset 0 1px 0 rgba(255,255,255,.14);transform-origin:calc(100% - 28px) 100%;transform:scale(.55) translateY(12px);opacity:0;transition:transform .24s cubic-bezier(.2,.9,.3,1.15),opacity .18s}
+.dmai-panel::-webkit-scrollbar{display:none}
+.dmai-wrap.open .dmai-catch{opacity:1}
+.dmai-wrap.open .dmai-panel{transform:none;opacity:1}
+.dmai-head{display:flex;align-items:center;gap:12px}
+.dmai-ava{width:46px;height:46px;flex:none;border-radius:16px;display:grid;place-items:center;background:rgba(79,227,230,.1);border:1px solid rgba(79,227,230,.34)}
+.dmai-head h2{margin:0;font:600 17px/1.2 var(--display)}
+.dmai-head .eyebrow{display:block;margin-top:5px;color:var(--accent)}
+.dmai-head .x{margin-left:auto}
+.dmai-say{margin:0;padding:12px 14px;border-radius:6px 18px 18px 18px;background:rgba(79,227,230,.08);border:1px solid rgba(79,227,230,.2);font-size:14px;line-height:1.5}
+.dmai-say b{display:block;font:600 15px var(--display);margin-bottom:3px}
+.dmai-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dmai-act{position:relative;display:flex;align-items:center;gap:8px;padding:11px 10px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--fg);font:600 12.5px var(--body);text-align:left;cursor:pointer}
+.dmai-act .ic{flex:none;color:var(--accent)}
+.dmai-act i{margin-left:auto;padding:2px 5px;border-radius:6px;background:var(--warn);color:#2A1C00;font:700 8px/1 var(--body);font-style:normal;letter-spacing:.04em}
+.dmai-meta{margin:0;text-align:center;font-size:12px;color:var(--muted)}
+.dmai-scan{position:relative;width:112px;height:112px;margin:6px auto 0;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(79,227,230,.16),transparent 70%);border:1px solid rgba(79,227,230,.3);overflow:hidden}
+.dmai-scan::before{content:"";position:absolute;inset:8px;border-radius:50%;border:1px dashed rgba(79,227,230,.4);animation:dmai-spin 9s linear infinite}
+.dmai-scan::after{content:"";position:absolute;left:0;right:0;height:26px;top:-26px;background:linear-gradient(180deg,transparent,rgba(79,227,230,.5));border-bottom:1.5px solid var(--accent);animation:dmai-sweep 1.9s ease-in-out infinite}
+@keyframes dmai-spin{to{transform:rotate(360deg)}}
+@keyframes dmai-sweep{0%{top:-26px}100%{top:112px}}
+.dmai-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.dmai-steps li{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--faint)}
+.dmai-steps li::before{content:"";width:9px;height:9px;flex:none;border-radius:50%;border:1.5px solid currentColor}
+.dmai-steps li.on{color:var(--fg)}
+.dmai-steps li.on::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,227,230,.2);animation:dmai-beacon 1s ease-in-out infinite}
+.dmai-steps li.ok{color:var(--muted)}
+.dmai-steps li.ok::before{background:var(--good);border-color:var(--good)}
+.dmai-score{display:flex;align-items:center;gap:14px;padding:14px}
+.dmai-score .ring text{font:700 24px var(--display);fill:var(--fg)}
+.dmai-score b{display:block;font:700 19px/1.15 var(--display)}
+.dmai-score span{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+.dmai-sec{display:flex;flex-direction:column;gap:8px}
+.dmai-sec ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.dmai-sec li{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;font-size:13px;line-height:1.45}
+.dmai-sec li .ic{flex:none;margin-top:1px;color:var(--c,var(--accent))}
+.dmai-sec li em{flex:none;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:rgba(79,227,230,.16);color:var(--accent);font:700 11px var(--body);font-style:normal}
+.dmai-panel p.dmai-text{margin:0;font-size:13.5px;line-height:1.55;color:var(--fg);opacity:.9}
+.nav button.locked{position:relative}
+.nav button.locked::after{content:"PRO";position:absolute;top:1px;left:50%;margin-left:5px;padding:1.5px 4px;border-radius:6px;background:var(--warn);color:#2A1C00;font:700 7px/1 var(--body);letter-spacing:.04em}
 .pay-box{padding:14px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
 .pay-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .pay-row>span:first-child{font-size:12.5px;color:var(--muted);white-space:nowrap}
@@ -452,6 +521,12 @@ select.field option{background:#0f1633;color:var(--fg)}
     </div>
   </div>
 
+  <button type="button" class="dmai" id="dmai" data-act="ai" aria-label="Doctor Money AI" aria-haspopup="dialog"></button>
+  <div class="dmai-tip" id="dmaiTip" aria-hidden="true">Siap memeriksa keuanganmu</div>
+  <div class="dmai-wrap" id="dmaiWrap" hidden>
+    <div class="dmai-catch" data-act="aiClose"></div>
+    <section class="dmai-panel" id="dmaiPanel" role="dialog" aria-modal="true" aria-labelledby="dmai-title"></section>
+  </div>
   <div class="toast" id="toast" role="status" hidden></div>
 </main>
 
@@ -492,6 +567,7 @@ var ICONS={
  target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/>',
  shield:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ lock:'<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>',
  close:'<path d="M6 6l12 12M18 6 6 18"/>',
  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
  down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
@@ -641,7 +717,8 @@ var requestedPlan=new URLSearchParams(window.location.search).get('plan');
 if(!['monthly','six_months','annual'].includes(requestedPlan))requestedPlan='';
 var S=Object.assign({},legacyState||defaults(),{tab:requestedPlan?'pro':'home',ym:curYM(),sel:6,q:'',flt:'all',aflt:'all',hide:false,editName:false,edit:null,armed:null,sheet:null,asheet:null,acct:null,pay:null});
 var apiToken=localStorage.getItem(SESSION_KEY)||'',apiReady=false,offlineMode=localStorage.getItem(OFFLINE_KEY)==='1',serverRevision=0,lastSynced=null,migration=null,linkedTelegram=false,waStatus=null,waCode='',waTimer=null,accountEmail='',authMode='login',authMessage='',authBusy=false,showAuth=false,resetEmail='',resetMethod='email',syncQueue=Promise.resolve(),syncErrorShown=false,proStatus=null,proUnavailable=false,proOrderBusy=false,profile=null;
-var requestedPlanShown=false;
+var requestedPlanShown=false,wantAI=new URLSearchParams(window.location.search).get('ai')==='1';
+if(wantAI&&!apiToken)showAuth=true;
 if(requestedPlan&&!apiToken)showAuth=true;
 function stateSnapshot(){return {txs:S.txs,wallets:S.wallets,budgets:S.budgets,goals:S.goals,name:S.name,preferences:S.preferences||{timezone:'Asia/Jakarta'},reminders:S.reminders||[],watchlist:S.watchlist||[],alerts:S.alerts||[],portfolio:S.portfolio||[]};}
 function adoptState(state){S.txs=state.txs||[];S.wallets=state.wallets||[];S.budgets=state.budgets||{};S.goals=state.goals||[];S.name=state.name||'Sobat';S.preferences=state.preferences||{timezone:'Asia/Jakarta'};S.reminders=state.reminders||[];S.watchlist=state.watchlist||[];S.alerts=state.alerts||[];S.portfolio=state.portfolio||[];}
@@ -685,6 +762,7 @@ async function registerEmail(email,password){
 }
 async function boot(){
   await bootApp();
+  if(wantAI&&apiToken&&apiReady&&!migration){wantAI=false;try{history.replaceState(null,'',window.location.pathname);}catch(e){}openAI();}
   if(requestedPlan&&!requestedPlanShown&&apiToken&&proStatus&&!proUnavailable&&!migration&&(proStatus.plans||[]).length){requestedPlanShown=true;try{history.replaceState(null,'',window.location.pathname);}catch(e){}openPay(requestedPlan);}
 }
 async function bootApp(){
@@ -1087,11 +1165,24 @@ function chartHTML(sel){
 /* ---------- view pieces ---------- */
 function logo(){return '<img src="/logo.png" width="34" height="34" alt="" aria-hidden="true" style="object-fit:cover;border-radius:11px">';}
 function proDate(value){return value?new Date(value).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';}
-var PRO_TABS={diagnose:'Diagnosis kondisi keuangan dan simulasi penghematan.',bud:'Anggaran per kategori dan tujuan tabungan.',aset:'Pencatatan aset serta harga crypto, saham, dan komoditas.'};
+var PRO_TABS={
+ diagnose:{i:'pulse',c:'#6EE7A0',h:'Tahu persis ke mana uang Anda pergi',p:'Diagnose membaca transaksi Anda, menunjukkan pos yang paling menguras dompet, dan menghitung berapa yang bisa Anda hemat mulai bulan ini.',l:['Skor kesehatan keuangan 0–100 lengkap dengan penyebabnya','Temuan otomatis dari pola pemasukan dan pengeluaran Anda','Simulasi hemat: geser persentasenya, lihat langsung hasilnya']},
+ bud:{i:'pie',c:'#FFC857',h:'Uang habis sebelum gajian? Beri batasnya',p:'Tetapkan anggaran tiap kategori dan lihat sisanya setiap kali mencatat. Sisihkan juga tabungan untuk tujuan yang benar-benar Anda inginkan.',l:['Batas bulanan per kategori dengan tanda saat hampir habis','Tujuan tabungan dengan progres yang selalu terlihat','Sisa anggaran bulan ini dalam satu angka']},
+ aset:{i:'layers',c:'#C79BFF',h:'Seluruh kekayaan Anda dalam satu layar',p:'Catat crypto, saham, dan aset lain, lalu pantau nilainya dari waktu ke waktu tanpa membuka banyak aplikasi.',l:['Harga crypto diperbarui otomatis','Untung dan rugi tiap aset dihitung dari harga beli','Tren saham IHSG dan pasar komoditas']}
+};
 function isFree(){return !!(apiToken&&proStatus&&!proStatus.active&&!proUnavailable);}
 function freeLimit(){return (proStatus&&proStatus.free_monthly_transactions)||50;}
 function freeFull(ym){return isFree()&&inM(ym).length>=freeLimit();}
-function lockedHTML(){return topbar()+'<section class="panel glass" aria-labelledby="lock-title"><span class="eyebrow">Fitur Pro</span><h1 class="ttl" id="lock-title">'+NAV[S.tab][1]+'</h1><p class="aside">'+PRO_TABS[S.tab]+' Fitur ini tersedia di Doctor Money Pro.</p><button type="button" class="btn primary" data-act="proplans">Lihat paket Pro</button></section>';}
+function lockedHTML(){
+  var f=PRO_TABS[S.tab],from=(proStatus.plans||[]).reduce(function(a,p){return a==null||p.monthly_price<a?p.monthly_price:a;},null);
+  return topbar()+'<section class="lock glass" style="--c:'+f.c+'" aria-labelledby="lock-title">'+
+   '<div class="lock-top"><span class="lock-art">'+ic(f.i,32)+'</span><span class="lock-badge">'+ic('lock',14)+NAV[S.tab][1]+' · khusus Pro</span></div>'+
+   '<h1 id="lock-title">'+f.h+'</h1><p class="lock-lede">'+f.p+'</p>'+
+   '<ul class="lock-list">'+f.l.concat('Catat transaksi tanpa batas setiap bulan').map(function(t){return '<li class="sub">'+ic('check',17)+'<span>'+t+'</span></li>';}).join('')+'</ul>'+
+   (from==null?'':'<div class="lock-price"><span>Mulai</span><b>'+rp(from)+'</b><span>per bulan</span></div>')+
+   '<button type="button" class="btn primary" data-act="proplans">Buka '+NAV[S.tab][1]+' dengan Pro</button>'+
+   '<p class="lock-note">Sekali bayar, tanpa perpanjangan otomatis. Catatan Anda di paket Gratis tetap tersimpan.</p></section>';
+}
 function proBanner(){
   if(!proStatus||proUnavailable||S.tab==='pro')return '';
   if(!proStatus.active)return '<section class="pro-banner"><div><b>Paket Gratis</b>'+inM(curYM()).length+' dari '+freeLimit()+' transaksi bulan ini</div><button type="button" data-act="proplans">Upgrade ke Pro</button></section>';
@@ -1311,27 +1402,29 @@ function initNav(){
   $('#axbtn').innerHTML=ic('close',18);
   $('#acxbtn').innerHTML=ic('close',18);
   $('#payxbtn').innerHTML=ic('close',18);
+  $('#dmai').innerHTML=robotSVG(40);
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
   if(!apiToken&&showAuth){
-    $('.nav').hidden=true;$('#fab').hidden=true;
+    $('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
     $('#view').innerHTML=authHTML()+'<button type="button" class="linkbtn" data-act="continueGuest">Lanjutkan tanpa masuk</button>';
     sc.scrollTop=0;return;
   }
   if(apiToken&&(!proStatus||proUnavailable)){
-    $('.nav').hidden=true;$('#fab').hidden=true;
+    $('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
     $('#view').innerHTML=proStatus?VIEWS.pro():'<div class="empty">Memeriksa status Doctor Money Pro…</div>';
     sc.scrollTop=0;return;
   }
   if(!apiToken&&S.tab==='pro')S.tab='home';
   var locked=isFree()&&!!PRO_TABS[S.tab];
-  $('.nav').hidden=false;$('#fab').hidden=locked;
+  $('.nav').hidden=false;$('#fab').hidden=false;$('#dmai').hidden=false;
   $('#view').innerHTML=locked?lockedHTML():VIEWS[S.tab]();
   if(migration)$('#view').insertAdjacentHTML('afterbegin',migrationHTML());
   if(S.tab==='diagnose'&&!locked)updateDiagnoseScenario();
   $$('.nav [data-act="tab"]').forEach(function(b){if(b.dataset.arg===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
-  $('#fab').setAttribute('aria-label',S.tab==='aset'?'Catat aset':'Tambah transaksi');
+  $$('.nav [data-act="tab"]').forEach(function(b){b.classList.toggle('locked',isFree()&&!!PRO_TABS[b.dataset.arg]);});
+  $('#fab').setAttribute('aria-label',S.tab==='aset'&&!locked?'Catat aset':'Tambah transaksi');
   if(!isFree()&&(S.tab==='aset'||(S.tab==='home'&&(S.portfolio||[]).length)))loadMarket();
   if(S.tab==='aset'&&!locked)loadYahooMarket();
   sc.scrollTop=y;
@@ -1340,6 +1433,95 @@ function render(keep){
   if(f){f.focus({preventScroll:true});f.select();}
 }
 
+/* ---------- Doctor Money AI ---------- */
+var AI={open:false,view:'intro',status:null,result:null,note:'',step:0,timer:null,run:0};
+var AI_STEPS=['Memeriksa pemasukan','Memeriksa pengeluaran','Menganalisis pola','Menyiapkan diagnosis'];
+var AI_MODES=[['spending','chart','Cek Pengeluaran'],['future','trend','Lihat Masa Depan'],['savings','coin','Cari Penghematan'],['goals','target','Cek Target']];
+var AI_HINT={tx:'Mau saya cari pola pengeluaran dari transaksi ini?',bud:'Mau saya periksa apakah pengeluaranmu masih sesuai anggaran?',diagnose:'Mau saya rangkum diagnosis bulan ini untukmu?'};
+function robotSVG(size){
+  return '<svg class="dmai-bot" width="'+size+'" height="'+size+'" viewBox="0 0 64 64" fill="none" aria-hidden="true">'+
+   '<path d="M32 12V7" stroke="url(#rg)" stroke-width="2.2" stroke-linecap="round"/><circle class="dmai-tipdot" cx="32" cy="5.5" r="2.6" fill="#7CF3F5"/>'+
+   '<rect x="7" y="23" width="5" height="9" rx="2.5" fill="url(#rg)"/><rect x="52" y="23" width="5" height="9" rx="2.5" fill="url(#rg)"/>'+
+   '<rect x="12" y="12" width="40" height="30" rx="13" fill="#12244A" stroke="url(#rg)" stroke-width="2.2"/>'+
+   '<rect x="17.5" y="19" width="29" height="15" rx="7.5" fill="#050B1E"/>'+
+   '<rect class="dmai-eye" x="23" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/><rect class="dmai-eye" x="35.5" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/>'+
+   '<path d="M21 47.5h22a5 5 0 0 1 5 5V59H16v-6.5a5 5 0 0 1 5-5z" fill="#12244A" stroke="url(#rg)" stroke-width="2.2" stroke-linejoin="round"/>'+
+   '<path d="M25.5 43v2.5a6.5 6.5 0 0 0 13 0V43" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><path d="M32 52v1.5" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><circle cx="32" cy="55.6" r="2.3" fill="#050B1E" stroke="#6EE7A0" stroke-width="1.5"/>'+
+   '</svg>';
+}
+function aiHead(sub){return '<div class="dmai-head"><span class="dmai-ava">'+robotSVG(34)+'</span><div><h2 id="dmai-title">Doctor Money AI</h2><span class="eyebrow">'+(sub||'Financial Intelligence')+'</span></div><button type="button" class="x" data-act="aiClose" aria-label="Tutup" id="dmaiX">'+ic('close',18)+'</button></div>';}
+function aiList(title,items,icon,color,numbered){
+  if(!items||!items.length)return '';
+  return '<div class="dmai-sec"><span class="eyebrow">'+title+'</span><ul>'+items.map(function(t,i){return '<li class="sub"'+(color?' style="--c:'+color+'"':'')+'>'+(numbered?'<em>'+(i+1)+'</em>':ic(icon,16))+'<span>'+esc(t)+'</span></li>';}).join('')+'</ul></div>';
+}
+function aiUsage(){var u=AI.status;return u&&u.limit?'<p class="dmai-meta">Sisa pemeriksaan bulan ini: '+u.remaining+' dari '+u.limit+'</p>':'';}
+function aiHTML(){
+  var v=AI.view,free=isFree();
+  if(v==='guest')return aiHead()+'<p class="dmai-say"><b>Saya bisa memeriksa kesehatan keuanganmu.</b>Masuk dulu supaya pemeriksaan memakai data keuanganmu sendiri.</p><button type="button" class="btn primary" data-act="aiLogin">Masuk &amp; Periksa Keuangan Saya</button>';
+  if(v==='offline')return aiHead()+'<p class="dmai-say"><b>Datamu belum tersambung ke akun.</b>Sambungkan ke akun server di tab Dompet, lalu saya bisa memeriksanya.</p><button type="button" class="btn" data-act="aiClose">Mengerti</button>';
+  if(v==='scan')return aiHead('Pemeriksaan berjalan')+'<div class="dmai-scan">'+robotSVG(64)+'</div><p class="dmai-meta" role="status">Memeriksa kondisi keuangan…</p><ul class="dmai-steps">'+AI_STEPS.map(function(t,i){return '<li class="'+(i<AI.step?'ok':i===AI.step?'on':'')+'">'+t+'</li>';}).join('')+'</ul>';
+  if(v==='nodata')return aiHead()+'<p class="dmai-say"><b>Belum ada yang bisa saya periksa.</b>Catat dulu pemasukan dan pengeluaranmu bulan ini, lalu panggil saya lagi.</p><button type="button" class="btn primary" data-act="aiAdd">Catat transaksi</button>';
+  if(v==='limit')return aiHead()+'<p class="dmai-say"><b>Pemeriksaan AI kamu bulan ini sudah habis.</b>Doctor Money Pro memberikan akses AI Financial Analysis yang lebih lengkap.</p><button type="button" class="btn primary" data-act="aiUpgrade">Upgrade ke Pro</button><button type="button" class="btn" data-act="aiBack">Kembali</button>';
+  if(v==='upsell')return aiHead()+'<p class="dmai-say"><b>Pemeriksaan ini bagian dari Doctor Money Pro.</b>Dengan Pro, saya bisa menelusuri pola pengeluaran, melihat arah keuanganmu, mencari penghematan, dan membandingkannya dengan targetmu.</p><button type="button" class="btn primary" data-act="aiUpgrade">Upgrade ke Pro</button><button type="button" class="btn" data-act="aiBack">Kembali</button>';
+  if(v==='error')return aiHead()+'<p class="dmai-say" role="alert"><b>Pemeriksaan belum berhasil.</b>'+esc(AI.note||'Coba lagi sebentar.')+'</p><button type="button" class="btn primary" data-act="aiRun" data-arg="'+esc(AI.mode||'full')+'">Coba lagi</button><button type="button" class="btn" data-act="aiBack">Kembali</button>';
+  if(v==='result'){
+    var r=AI.result,a=r.analysis,sc=r.score,col=sc==null?'#71829E':sc>=60?'url(#rg)':sc>=40?'#FFC857':'#FF7A8A';
+    return aiHead('Diagnosis '+ymShort(r.month))+
+     '<div class="dmai-score sub">'+ring(sc==null?0:sc,78,7,sc==null?'–':String(sc),col,'Skor kesehatan keuangan '+(sc==null?'belum ada':sc+' dari 100'))+'<div><b>'+esc(r.label)+'</b><span>'+(sc==null?'Skor belum tersedia':sc+' / 100 · skor kesehatan keuangan')+'</span></div></div>'+
+     '<p class="dmai-say"><b>'+esc(a.headline)+'</b>'+esc(a.summary)+'</p>'+
+     aiList('Yang sudah sehat',a.strengths,'check','#6EE7A0')+
+     aiList('Area yang perlu diperhatikan',a.risks,'shield','#FFC857')+
+     aiList('Pola pengeluaran',a.insights,'chart')+
+     aiList('Resep keuangan',a.prescription,'',null,true)+
+     (a.outlook?'<div class="dmai-sec"><span class="eyebrow">Arah ke depan</span><p class="dmai-text">'+esc(a.outlook)+'</p></div>':'')+
+     (free?'<p class="dmai-meta">Ini pemeriksaan dasar. Pro membuka riwayat, proyeksi, dan resep yang lebih lengkap.</p>':'')+
+     '<button type="button" class="btn primary" data-act="aiDiagnose">Lihat Diagnosis Lengkap</button><button type="button" class="btn" data-act="aiBack">Pemeriksaan lain</button>'+
+     (r.cached?'<p class="dmai-meta">Datamu belum berubah sejak pemeriksaan terakhir.</p>':'')+aiUsage();
+  }
+  var acts=AI_MODES.filter(function(m){return m[0]!=='goals'||S.goals.length;}).map(function(m){return '<button type="button" class="dmai-act" data-act="aiRun" data-arg="'+m[0]+'">'+ic(m[1],17)+'<span>'+m[2]+'</span>'+(free?'<i>PRO</i>':'')+'</button>';}).join('');
+  return aiHead()+'<p class="dmai-say"><b>Siap memeriksa kesehatan keuanganmu.</b>'+(AI_HINT[S.tab]||'Mau saya lakukan pemeriksaan keuangan lengkap?')+'</p>'+
+   '<button type="button" class="btn primary" data-act="aiRun" data-arg="full">Periksa Keuangan Saya</button>'+
+   '<div class="dmai-acts" role="group" aria-label="Pemeriksaan lain">'+acts+'</div>'+aiUsage();
+}
+function renderAI(){if(AI.open){$('#dmaiPanel').innerHTML=aiHTML();$('#dmaiPanel').scrollTop=0;}}
+function openAI(){
+  if(AI.open)return;
+  AI.open=true;AI.view=!apiToken?'guest':!apiReady?'offline':AI.view==='result'&&AI.result?'result':'intro';
+  $('#dmaiTip').classList.remove('show');$('#dmai').classList.add('away');
+  var w=$('#dmaiWrap');w.hidden=false;renderAI();
+  requestAnimationFrame(function(){w.classList.add('open');var x=$('#dmaiX');if(x)x.focus({preventScroll:true});});
+  if(apiToken&&apiReady)apiRequest('/api/ai/status').then(function(st){AI.status=st;if(AI.open&&AI.view==='intro')renderAI();}).catch(function(){});
+}
+function closeAI(){
+  if(!AI.open)return;
+  AI.open=false;AI.run++;window.clearInterval(AI.timer);
+  if(AI.view!=='result')AI.view='intro';
+  var w=$('#dmaiWrap');w.classList.remove('open');$('#dmai').classList.remove('away');
+  setTimeout(function(){if(!AI.open){w.hidden=true;$('#dmaiPanel').innerHTML='';}},240);
+  $('#dmai').focus({preventScroll:true});
+}
+async function runAI(mode){
+  if(!apiToken||!apiReady){AI.view=!apiToken?'guest':'offline';renderAI();return;}
+  if(isFree()&&mode!=='full'){AI.view='upsell';renderAI();return;}
+  var run=++AI.run,started=Date.now();
+  AI.mode=mode;AI.view='scan';AI.step=0;renderAI();
+  window.clearInterval(AI.timer);
+  AI.timer=window.setInterval(function(){if(AI.step<AI_STEPS.length-1){AI.step++;if(AI.view==='scan')renderAI();}},850);
+  var next;
+  try{
+    // The examination reads the account's saved data, so let pending saves land first.
+    await syncQueue;
+    var body=await apiRequest('/api/ai/analyze',{method:'POST',body:JSON.stringify({mode:mode,context:NAV[S.tab]?S.tab:''})});
+    AI.status=Object.assign({},AI.status,body.usage);
+    if(body.status==='no_data')next='nodata';else{AI.result=body;next='result';}
+  }catch(error){
+    if(error.status===402){next=isFree()&&mode==='full'?'limit':'upsell';}
+    else{AI.note=error.message;next='error';}
+  }
+  // Keep the scan on screen long enough to read, even when the answer was instant.
+  var wait=Math.max(0,AI_STEPS.length*850-(Date.now()-started));
+  setTimeout(function(){if(run!==AI.run)return;window.clearInterval(AI.timer);AI.view=next;renderAI();},wait);
+}
 /* ---------- toast ---------- */
 var toastT=null;
 function toast(msg,label,fn){
@@ -1666,9 +1848,14 @@ var ACT={
  procheck:function(){refreshProStatus();},
  mprev:function(){var m=shiftYM(curYM(),-12);if(S.ym>m){S.ym=shiftYM(S.ym,-1);S.edit=null;render();}},
  mnext:function(){if(S.ym<curYM()){S.ym=shiftYM(S.ym,1);S.edit=null;render();}},
- add:function(){if(S.tab==='aset')openAsset(S.aflt==='all'?'':S.aflt);else openSheet();},close:closeSheet,
+ add:function(){if(S.tab==='aset'&&!isFree())openAsset(S.aflt==='all'?'':S.aflt);else openSheet();},close:closeSheet,
  aadd:function(g){openAsset(g);},aclose:closeAsset,
  account:openAccount,acctClose:closeAccount,
+ ai:openAI,aiClose:closeAI,aiRun:function(g){runAI(g);},aiBack:function(){AI.view='intro';renderAI();},
+ aiDiagnose:function(){closeAI();S.tab='diagnose';S.edit=null;render(false);},
+ aiUpgrade:function(){closeAI();S.tab='pro';render(false);},
+ aiLogin:function(){closeAI();ACT.authLogin();},
+ aiAdd:function(){closeAI();openSheet();},
  acctPick:function(){var i=$('#acctFile');if(i){i.value='';i.click();}},
  acctNoPhoto:function(){if(S.acct){S.acct.avatar='';paintAvatar();}},
  akind:function(g){if(!S.asheet||!KIND[g])return;S.asheet.kind=g;renderAssetForm();updateAsset();},
@@ -1815,7 +2002,8 @@ document.addEventListener('submit',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
-    if(S.pay)closePay();
+    if(AI.open)closeAI();
+    else if(S.pay)closePay();
     else if(S.acct)closeAccount();
     else if(S.sheet)closeSheet();
     else if(S.asheet)closeAsset();
@@ -1848,8 +2036,9 @@ document.addEventListener('pointerdown',pickDay);
 window.setInterval(function(){if(S.tab==='aset'&&!document.hidden){loadMarket();loadYahooMarket();}},60000);
 
 initNav();
+setTimeout(function(){var t=$('#dmaiTip');if(AI.open||$('#dmai').hidden||S.sheet||S.asheet||S.acct||S.pay)return;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4500);},3500);
 $('#view').innerHTML='<div class="empty">Menghubungkan ke penyimpanan Doctor Money…</div>';
-$('.nav').hidden=true;$('#fab').hidden=true;
+$('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
 boot();
 })();
 </script>

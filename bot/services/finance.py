@@ -110,7 +110,8 @@ def dashboard_score(state: dict[str, Any], year_month: str) -> dict[str, Any]:
         score = None
     else:
         savings_points = min(1, max(0, (savings_ratio or 0) / 0.3)) * 40
-        budget_points = 30 if budget_used <= 1 else max(0, 30 * (1 - (budget_used - 1) * 2))
+        # Same rule as the dashboard: without any budget set, this part earns half its points.
+        budget_points = 15 if not budget_total else 30 if budget_used <= 1 else max(0, 30 * (1 - (budget_used - 1) * 2))
         emergency_points = min(1, max(0, emergency_months or 0) / 6) * 30
         score = round(savings_points + budget_points + emergency_points)
     return {"income": income, "expenses": expenses, "net": income - expenses, "savings_ratio": savings_ratio, "budget_used": budget_used, "emergency_months": emergency_months, "score": score, "top_categories": sorted(expenses_by_category.items(), key=lambda item: item[1], reverse=True)[:5]}

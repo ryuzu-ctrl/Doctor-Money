@@ -119,3 +119,17 @@ class Payment(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     proof_at: Mapped[datetime | None] = mapped_column(DateTime)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class AiUsage(Base):
+    __tablename__ = "ai_usage"
+    __table_args__ = (Index("ix_ai_usage_account_created", "account_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
+    mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    pro: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # Account revision the analysis was written for; an unchanged revision reuses result_json.
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    result_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

@@ -513,6 +513,65 @@ def test_free_limit_applies_to_bot_and_whatsapp_mutations(client):
     apply_account_mutation(account_id, lambda current: current["txs"].pop())
 
 
+def seed_month(client, headers, state, month):
+    wallet = state["wallets"][0]["id"]
+    state = {**state, "txs": [
+        {"id": "g1", "date": month + "-01", "desc": "Gaji", "cat": "gaji", "amt": 8_000_000, "w": wallet, "type": "in"},
+        {"id": "m1", "date": month + "-02", "desc": "Makan", "cat": "makan", "amt": 1_500_000, "w": wallet, "type": "out"},
+    ]}
+    assert client.put("/api/state", headers=headers, json={"state": state, "revision": 0}).status_code == 200
+    return state
+
+
+AI_RESULT = {"headline": "Arus kasmu sehat.", "summary": "Ringkasan.", "strengths": ["Menabung."], "risks": [], "insights": [], "prescription": ["Sisihkan dana darurat."], "outlook": ""}
+
+
+def test_ai_analysis_uses_account_data_caches_and_enforces_free_limit(client, monkeypatch):
+    token, state = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    seen = []
+    monkeypatch.setattr("backend.ai.generate", lambda facts: seen.append(facts) or dict(AI_RESULT))
+    monkeypatch.setenv("AI_FREE_MONTHLY_LIMIT", "2")
+    assert client.post("/api/ai/analyze", json={"mode": "full"}).status_code == 401
+
+    empty = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"})
+    assert empty.status_code == 200 and empty.json()["status"] == "no_data" and not seen
+
+    month = now_utc().strftime("%Y-%m")
+    state = seed_month(client, headers, state, month)
+    pro = client.post("/api/ai/analyze", headers=headers, json={"mode": "spending", "context": "tx"}).json()
+    assert pro["status"] == "ok" and pro["tier"] == "pro" and pro["analysis"]["headline"] == "Arus kasmu sehat."
+    assert pro["facts"]["income"] == 8_000_000 and pro["facts"]["expenses"] == 1_500_000
+    assert seen[-1]["depth"] == "full" and seen[-1]["top_expense_categories"][0]["amount"] == 1_500_000
+    assert "txs" not in seen[-1] and "previous_months" in seen[-1]
+
+    end_trial(token)
+    assert client.post("/api/ai/analyze", headers=headers, json={"mode": "spending"}).status_code == 402
+    first = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"}).json()
+    assert first["cached"] is False and first["tier"] == "free" and seen[-1]["depth"] == "basic" and "budgets" not in seen[-1]
+    calls = len(seen)
+    again = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"}).json()
+    assert again["cached"] is True and len(seen) == calls and again["usage"] == first["usage"]
+
+    state["txs"].append({**state["txs"][1], "id": "m2"})
+    assert client.put("/api/state", headers=headers, json={"state": state, "revision": 1}).status_code == 200
+    status = client.get("/api/ai/status", headers=headers).json()
+    assert status["tier"] == "free" and status["limit"] == 2 and status["remaining"] == 0
+    blocked = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"})
+    assert blocked.status_code == 402 and "sudah habis" in blocked.json()["detail"] and len(seen) == calls
+
+
+def test_ai_analysis_reports_unavailable_without_spending_quota(client, monkeypatch):
+    token, state = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    seed_month(client, headers, state, now_utc().strftime("%Y-%m"))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert client.get("/api/ai/status", headers=headers).json()["configured"] is False
+    failed = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"})
+    assert failed.status_code == 503 and "belum diaktifkan" in failed.json()["detail"]
+    assert client.get("/api/ai/status", headers=headers).json()["used"] == 0
+
+
 def test_root_and_dashboard_routes_are_available(client):
     landing = client.get("/")
     assert landing.status_code == 200

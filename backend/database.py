@@ -71,5 +71,5 @@ def migrate_auth_schema(target_engine=engine) -> None:
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_email ON accounts (email)"))
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_whatsapp_number ON accounts (whatsapp_number)"))
         if target_engine.dialect.name == "postgresql":
-            for table in ("accounts", "api_tokens", "pair_codes", "password_resets", "whatsapp_link_codes"):
+            for table in ("accounts", "api_tokens", "pair_codes", "password_resets", "whatsapp_link_codes", "ai_usage"):
                 connection.execute(text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
