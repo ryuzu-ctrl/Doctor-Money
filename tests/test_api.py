@@ -1,6 +1,7 @@
 import os
 import tempfile
 import uuid
+from datetime import datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,7 +14,8 @@ os.environ["WEBAPP_URL"] = "https://doctor-money.example.web.app"
 from backend.app import app
 from backend.database import SessionLocal, engine
 from backend.models import Account, PasswordReset, ProAccess
-from backend.repository import account_for_token, make_pair_code, now_utc
+from backend.pro import FreeLimitReached
+from backend.repository import account_for_token, apply_account_mutation, make_pair_code, now_utc
 
 
 @pytest.fixture
@@ -424,20 +426,91 @@ def test_pro_trial_manual_order_and_admin_activation(client, monkeypatch):
     assert client.get("/api/pro/status", headers=headers).json()["plan"]["id"] == "six_months"
 
 
-def test_expired_pro_blocks_dashboard_data_but_allows_new_order(client):
-    token, _ = account(client)
-    headers = {"Authorization": "Bearer " + token}
-    client.get("/api/pro/status", headers=headers)
+def end_trial(token: str) -> None:
     with SessionLocal() as db:
-        account_row = account_for_token(db, token)
-        access = db.get(ProAccess, account_row.id)
+        access = db.get(ProAccess, account_for_token(db, token).id)
         access.status = "expired"
-        access.trial_ends_at = now_utc()
+        access.trial_started_at = now_utc() - timedelta(days=62)
+        access.trial_ends_at = now_utc() - timedelta(days=31)
         db.commit()
 
-    assert client.get("/api/state", headers=headers).status_code == 402
+
+def month_state(state: dict, count: int, month: str = "2026-03") -> dict:
+    wallet = state["wallets"][0]["id"]
+    return {**state, "txs": [{"id": f"t{index}", "date": f"{month}-01", "desc": "Kopi", "cat": "makan", "amt": 1000, "w": wallet, "type": "out"} for index in range(count)]}
+
+
+def test_trial_lasts_one_month_and_old_seven_day_trials_are_extended(client):
+    token, _ = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    status = client.get("/api/pro/status", headers=headers).json()
+    started = datetime.fromisoformat(status["trial_started_at"].replace("Z", "+00:00"))
+    ended = datetime.fromisoformat(status["trial_ends_at"].replace("Z", "+00:00"))
+    assert 28 <= (ended - started).days <= 31
+    assert status["tier"] == "pro" and status["free_monthly_transactions"] == 50
+
+    with SessionLocal() as db:
+        access = db.get(ProAccess, account_for_token(db, token).id)
+        access.status = "expired"
+        access.trial_started_at = now_utc() - timedelta(days=10)
+        access.trial_ends_at = now_utc() - timedelta(days=3)
+        db.commit()
+    revived = client.get("/api/pro/status", headers=headers).json()
+    assert revived["status"] == "trial" and revived["active"] is True
+
+
+def test_free_account_keeps_dashboard_data_with_monthly_transaction_limit(client):
+    token, state = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    client.get("/api/pro/status", headers=headers)
+    end_trial(token)
+
+    status = client.get("/api/pro/status", headers=headers).json()
+    assert status["status"] == "expired" and status["active"] is False and status["tier"] == "free"
+    assert client.get("/api/state", headers=headers).status_code == 200
+    saved = client.put("/api/state", headers=headers, json={"state": month_state(state, 50), "revision": 0})
+    assert saved.status_code == 200
+    over = client.put("/api/state", headers=headers, json={"state": month_state(state, 51), "revision": 1})
+    assert over.status_code == 402 and "50 transaksi" in over.json()["detail"]
+    other_month = month_state(state, 50)
+    other_month["txs"].append({**other_month["txs"][0], "id": "april", "date": "2026-04-01"})
+    assert client.put("/api/state", headers=headers, json={"state": other_month, "revision": 1}).status_code == 200
     order = client.post("/api/pro/orders", headers=headers, json={"plan_id": "annual"})
     assert order.status_code == 200 and order.json()["amount"] == 180_000
+
+
+def test_free_account_can_still_edit_months_recorded_during_pro(client):
+    token, state = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    full = month_state(state, 80)
+    assert client.put("/api/state", headers=headers, json={"state": full, "revision": 0}).status_code == 200
+    end_trial(token)
+
+    full["txs"][0]["desc"] = "Teh"
+    assert client.put("/api/state", headers=headers, json={"state": full, "revision": 1}).status_code == 200
+    full["txs"].pop()
+    assert client.put("/api/state", headers=headers, json={"state": full, "revision": 2}).status_code == 200
+    full["txs"].extend([{**full["txs"][0], "id": "n1"}, {**full["txs"][0], "id": "n2"}])
+    assert client.put("/api/state", headers=headers, json={"state": full, "revision": 3}).status_code == 402
+
+
+def test_free_limit_applies_to_bot_and_whatsapp_mutations(client):
+    token, state = account(client)
+    headers = {"Authorization": "Bearer " + token}
+    month = now_utc().strftime("%Y-%m")
+    assert client.put("/api/state", headers=headers, json={"state": month_state(state, 50, month), "revision": 0}).status_code == 200
+    with SessionLocal() as db:
+        account_id = account_for_token(db, token).id
+
+    def record(current):
+        current["txs"].append({**current["txs"][0], "id": "extra"})
+
+    apply_account_mutation(account_id, record)
+    end_trial(token)
+    with pytest.raises(FreeLimitReached):
+        apply_account_mutation(account_id, record)
+    assert len(client.get("/api/state", headers=headers).json()["state"]["txs"]) == 51
+    apply_account_mutation(account_id, lambda current: current["txs"].pop())
 
 
 def test_root_and_dashboard_routes_are_available(client):

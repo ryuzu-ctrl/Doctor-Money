@@ -28,7 +28,7 @@ import httpx
 
 from .database import Base, SessionLocal, engine, migrate_auth_schema
 from .models import Account, PasswordReset, ProAccess, ProOrder
-from .pro import PRO_PLANS, activate_pro_plan, ensure_pro_access, pro_access_active, pro_payment_config
+from .pro import FREE_LIMIT_MESSAGE, FREE_MONTHLY_TRANSACTIONS, PRO_PLANS, activate_pro_plan, ensure_pro_access, month_counts, over_free_limit, pro_access_active, pro_payment_config
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
 from .security import InitDataError, validate_init_data
 from . import whatsapp
@@ -173,13 +173,6 @@ def order_payload(order: ProOrder) -> dict[str, Any]:
     }
 
 
-def require_pro(account: Account = Depends(current_account), db: Session = Depends(get_db)) -> Account:
-    access = ensure_pro_access(db, account)
-    if not pro_access_active(access):
-        raise HTTPException(status_code=402, detail="Masa Pro Anda telah berakhir. Pilih paket untuk mengaktifkan kembali fitur dashboard.")
-    return account
-
-
 def require_pro_admin(authorization: str | None) -> None:
     expected = os.getenv("PRO_ADMIN_SECRET", "")
     scheme, _, secret = (authorization or "").partition(" ")
@@ -238,6 +231,8 @@ def pro_status(db: Session = Depends(get_db), account: Account = Depends(current
     return {
         "status": access.status,
         "active": pro_access_active(access),
+        "tier": "pro" if pro_access_active(access) else "free",
+        "free_monthly_transactions": FREE_MONTHLY_TRANSACTIONS,
         "plan": plan_payload(access.plan_id) if access.plan_id in PRO_PLANS else None,
         "trial_started_at": iso_utc(access.trial_started_at),
         "trial_ends_at": iso_utc(access.trial_ends_at),
@@ -659,13 +654,15 @@ async def market_assets() -> dict[str, Any]:
 
 
 @app.get("/api/state")
-def get_state(account: Account = Depends(require_pro)) -> dict[str, Any]:
+def get_state(account: Account = Depends(current_account)) -> dict[str, Any]:
     return {"state": state_of(account), "revision": account.revision}
 
 
 @app.put("/api/state")
-def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, int]:
+def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, int]:
     validate_state(payload.state)
+    if over_free_limit(month_counts(state_of(account)), payload.state) and not pro_access_active(ensure_pro_access(db, account)):
+        raise HTTPException(status_code=402, detail=FREE_LIMIT_MESSAGE)
     try:
         revision = put_state(db, account, payload.state, payload.revision)
     except ValueError as exc:
@@ -676,13 +673,13 @@ def save_state(payload: StateRequest, db: Session = Depends(get_db), account: Ac
 
 
 @app.post("/api/import/preview")
-def import_preview(legacy: dict[str, Any], account: Account = Depends(require_pro)) -> dict[str, Any]:
+def import_preview(legacy: dict[str, Any], account: Account = Depends(current_account)) -> dict[str, Any]:
     prepared, skipped = prepare_legacy_state(legacy)
     return {"state": prepared, "account_revision": account.revision, "imported_transactions": len(prepared["txs"]), "skipped_sample_items": skipped, "wallets": len(prepared["wallets"]), "budgets": len(prepared["budgets"]), "goals": len(prepared["goals"])}
 
 
 @app.post("/api/import/confirm")
-def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, int]:
+def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, int]:
     state, _ = prepare_legacy_state(payload.state)
     validate_state(state)
     if account.revision or state_of(account).get("txs"):
@@ -691,7 +688,7 @@ def import_confirm(payload: ImportRequest, db: Session = Depends(get_db), accoun
 
 
 @app.post("/api/link")
-def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
+def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
     if not account.email:
         raise HTTPException(status_code=403, detail="Buat akun email atau masuk sebelum menghubungkan Telegram")
     try:
@@ -702,12 +699,12 @@ def link_telegram(payload: PairRequest, db: Session = Depends(get_db), account: 
 
 
 @app.get("/api/link/status")
-def link_status(account: Account = Depends(require_pro)) -> dict[str, Any]:
+def link_status(account: Account = Depends(current_account)) -> dict[str, Any]:
     return {"connected": account.dashboard_linked, "telegram_id": account.telegram_id if account.dashboard_linked else None}
 
 
 @app.delete("/api/link")
-def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
+def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
     telegram_id = account.telegram_id
     account.dashboard_linked = False
     account.telegram_id = None
@@ -719,12 +716,12 @@ def unlink_telegram(db: Session = Depends(get_db), account: Account = Depends(re
 
 
 @app.get("/api/whatsapp/status")
-def whatsapp_status(account: Account = Depends(require_pro)) -> dict[str, Any]:
+def whatsapp_status(account: Account = Depends(current_account)) -> dict[str, Any]:
     return {"configured": whatsapp.configured(), "connected": account.whatsapp_number is not None, "number": account.whatsapp_number, "bot_number": whatsapp.bot_number()}
 
 
 @app.post("/api/whatsapp/link-code")
-def whatsapp_link_code(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, Any]:
+def whatsapp_link_code(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
     if not account.email:
         raise HTTPException(status_code=403, detail="Buat akun email atau masuk sebelum menghubungkan WhatsApp")
     if not whatsapp.configured():
@@ -736,7 +733,7 @@ def whatsapp_link_code(db: Session = Depends(get_db), account: Account = Depends
 
 
 @app.delete("/api/whatsapp/link")
-def unlink_whatsapp(db: Session = Depends(get_db), account: Account = Depends(require_pro)) -> dict[str, str]:
+def unlink_whatsapp(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, str]:
     account.whatsapp_number = None
     db.commit()
     return {"status": "terputus"}
@@ -801,4 +798,4 @@ def dashboard_page() -> FileResponse:
 if os.getenv("BOT_TOKEN"):
     @app.get("/api/config")
     def public_config() -> dict[str, bool]:
-        return {"telegram_web_app": True}
+        return {"telegram_web_app": True}

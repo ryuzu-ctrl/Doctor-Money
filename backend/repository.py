@@ -158,11 +158,14 @@ def use_pair_code(db: Session, account: Account, code: str) -> Account:
 
 def apply_bot_mutation(telegram_id: int, mutation) -> tuple[dict[str, Any], Any]:
     from .database import SessionLocal, engine
+    from .pro import FREE_LIMIT_MESSAGE, FreeLimitReached, account_has_pro, month_counts, over_free_limit
 
     with SessionLocal() as db:
         account = db.scalar(select(Account).where(Account.telegram_id == telegram_id))
         if account is None:
             account = account_for_telegram(db, telegram_id)
+        # Checked in its own session before the row lock: it may write the entitlement row.
+        pro = account_has_pro(account.id)
         if engine.dialect.name == "sqlite":
             db.connection().exec_driver_sql("BEGIN IMMEDIATE")
             account = db.scalar(select(Account).where(Account.telegram_id == telegram_id))
@@ -171,7 +174,11 @@ def apply_bot_mutation(telegram_id: int, mutation) -> tuple[dict[str, Any], Any]
         if account is None:
             raise ValueError("Akun tidak ditemukan")
         state = state_of(account)
+        before_counts = month_counts(state)
         result = mutation(state)
+        if not pro and over_free_limit(before_counts, state):
+            db.rollback()
+            raise FreeLimitReached(FREE_LIMIT_MESSAGE)
         account.state_json = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
         account.revision += 1
         db.commit()
@@ -180,7 +187,9 @@ def apply_bot_mutation(telegram_id: int, mutation) -> tuple[dict[str, Any], Any]
 
 def apply_account_mutation(account_id: int, mutation) -> tuple[dict[str, Any], Any]:
     from .database import SessionLocal, engine
+    from .pro import FREE_LIMIT_MESSAGE, FreeLimitReached, account_has_pro, month_counts, over_free_limit
 
+    pro = account_has_pro(account_id)
     with SessionLocal() as db:
         if engine.dialect.name == "sqlite":
             db.connection().exec_driver_sql("BEGIN IMMEDIATE")
@@ -191,7 +200,11 @@ def apply_account_mutation(account_id: int, mutation) -> tuple[dict[str, Any], A
             raise ValueError("Akun tidak ditemukan")
         state = state_of(account)
         before = account.state_json
+        before_counts = month_counts(state)
         result = mutation(state)
+        if not pro and over_free_limit(before_counts, state):
+            db.rollback()
+            raise FreeLimitReached(FREE_LIMIT_MESSAGE)
         account.state_json = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
         if account.state_json != before:
             account.revision += 1
@@ -203,4 +216,4 @@ def read_bot_state(telegram_id: int) -> dict[str, Any]:
     from .database import SessionLocal
 
     with SessionLocal() as db:
-        return state_of(account_for_telegram(db, telegram_id))
+        return state_of(account_for_telegram(db, telegram_id))

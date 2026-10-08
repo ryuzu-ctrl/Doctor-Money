@@ -698,7 +698,6 @@ async function bootApp(){
     try{profile=await apiRequest('/api/auth/profile');accountEmail=profile.email||'';}
     catch(error){if(error.status===401)throw error;profile=null;try{accountEmail=(await apiRequest('/api/auth/me')).email||'';}catch(meError){if(meError.status===401)throw meError;}}
     proUnavailable=false;
-    if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}
     if(offlineMode){apiReady=false;render(false);return;}
     if(!remote)remote=await apiRequest('/api/state');
     var base=null;try{base=JSON.parse(localStorage.getItem(BASE_KEY));}catch(e){}
@@ -713,7 +712,7 @@ async function bootApp(){
     if(JSON.stringify(recovered)!==JSON.stringify(remote.state)){await writeState(recovered);}
     try{localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));}catch(e){}
     render(false);
-    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.pay||S.edit||S.editName)return;try{proStatus=await apiRequest('/api/pro/status');if(!proStatus.active){apiReady=false;S.tab='pro';render(false);return;}var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
+    window.setInterval(async function(){if(!apiReady||migration||S.sheet||S.asheet||S.pay||S.edit||S.editName)return;try{var wasActive=proStatus.active;proStatus=await apiRequest('/api/pro/status');if(proStatus.active!==wasActive)render(false);var latest=await apiRequest('/api/state');if(latest.revision===serverRevision)return;var current=stateSnapshot();if(JSON.stringify(current)===JSON.stringify(lastSynced)){serverRevision=latest.revision;saveSyncBase(latest.state);adoptState(latest.state);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}else{var merged=mergeState(lastSynced||latest.state,current,latest.state);serverRevision=latest.revision;await writeState(merged);adoptState(merged);localStorage.setItem(KEY,JSON.stringify(stateSnapshot()));render();}}catch(e){}},30000);
   }catch(e){
     apiReady=false;
     if(e.status===401){apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';showAuth=true;render(false);return;}
@@ -1088,8 +1087,14 @@ function chartHTML(sel){
 /* ---------- view pieces ---------- */
 function logo(){return '<img src="/logo.png" width="34" height="34" alt="" aria-hidden="true" style="object-fit:cover;border-radius:11px">';}
 function proDate(value){return value?new Date(value).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';}
+var PRO_TABS={diagnose:'Diagnosis kondisi keuangan dan simulasi penghematan.',bud:'Anggaran per kategori dan tujuan tabungan.',aset:'Pencatatan aset serta harga crypto, saham, dan komoditas.'};
+function isFree(){return !!(apiToken&&proStatus&&!proStatus.active&&!proUnavailable);}
+function freeLimit(){return (proStatus&&proStatus.free_monthly_transactions)||50;}
+function freeFull(ym){return isFree()&&inM(ym).length>=freeLimit();}
+function lockedHTML(){return topbar()+'<section class="panel glass" aria-labelledby="lock-title"><span class="eyebrow">Fitur Pro</span><h1 class="ttl" id="lock-title">'+NAV[S.tab][1]+'</h1><p class="aside">'+PRO_TABS[S.tab]+' Fitur ini tersedia di Doctor Money Pro.</p><button type="button" class="btn primary" data-act="proplans">Lihat paket Pro</button></section>';}
 function proBanner(){
-  if(!proStatus||!proStatus.active||S.tab==='pro')return '';
+  if(!proStatus||proUnavailable||S.tab==='pro')return '';
+  if(!proStatus.active)return '<section class="pro-banner"><div><b>Paket Gratis</b>'+inM(curYM()).length+' dari '+freeLimit()+' transaksi bulan ini</div><button type="button" data-act="proplans">Upgrade ke Pro</button></section>';
   var trial=proStatus.status==='trial',end=trial?proStatus.trial_ends_at:proStatus.expires_at;
   return '<section class="pro-banner"><div><b>'+ (trial?'Uji coba Pro':'Doctor Money Pro')+'</b>'+(trial?'berakhir ':'aktif sampai ')+proDate(end)+'</div><button type="button" data-act="proplans">Lihat paket</button></section>';
 }
@@ -1202,17 +1207,17 @@ var VIEWS={
     var txt=b.diff<0?'Terlambat '+(-b.diff)+' hari':b.diff===0?'Hari ini':b.diff===1?'Besok':b.diff+' hari lagi';
     return '<div class="bill sub"><span class="bav">'+ic(b.i,22)+'</span><div class="bill-m"><b>'+b.n+'</b><span class="l1">'+rp(b.a)+'</span><span class="when">'+ic('clock',14)+b.d+' '+MS[new Date().getMonth()]+'</span></div><div class="bill-a"><span class="pill info'+cls+'">'+txt+'</span><button type="button" class="pill" data-act="pay" data-arg="'+b.id+'">Bayar</button></div></div>';
   }).join('');
-  var recent=ordered(S.txs).slice(0,5);
+  var recent=ordered(S.txs).slice(0,5),free=isFree();
   return topbar()+
   '<div><h1 class="hello">'+greet()+', '+(S.editName?'<input class="name-in" id="nameIn" maxlength="16" value="'+esc(S.name)+'" aria-label="Nama panggilan">':'<button type="button" class="nm" data-act="name" aria-label="Ubah nama">'+esc(S.name)+'</button>')+'!</h1>'+monthSw()+'</div>'+
   '<section class="hero glass" aria-label="Ringkasan saldo"><div class="hero-top"><div><span class="eyebrow">Total saldo</span>'+
    '<div class="bal"><span class="cur">Rp</span><span>'+amt+'</span><button type="button" class="eye" data-act="hide" aria-pressed="'+S.hide+'" aria-label="'+(S.hide?'Tampilkan saldo':'Sembunyikan saldo')+'">'+ic(S.hide?'eyeoff':'eye',16)+'</button></div>'+
    '<span class="delta'+(s.net<0?' neg':'')+'">'+(s.net<0?'−':'+')+rpw(s.net)+' di '+MS[+S.ym.slice(5,7)-1]+'</span></div>'+
-   '<div class="score">'+ring(sc==null?0:sc,66,6,sc==null?'–':String(sc),scCol,'Skor kesehatan keuangan '+(sc==null?'belum ada':sc))+'<small>'+scoreLabel(sc)+'</small></div></div>'+
+   (free?'':'<div class="score">'+ring(sc==null?0:sc,66,6,sc==null?'–':String(sc),scCol,'Skor kesehatan keuangan '+(sc==null?'belum ada':sc))+'<small>'+scoreLabel(sc)+'</small></div>')+'</div>'+
    '<div class="io"><div class="in"><span class="ico">'+ic('down',16)+'</span><div><span>Pemasukan</span><b>'+rpw(s.inc)+'</b></div></div><div class="out"><span class="ico">'+ic('up',16)+'</span><div><span>Pengeluaran</span><b>'+rpw(s.exp)+'</b></div></div></div></section>'+
-  '<section class="rx glass sub"><span class="rx-ic">'+ic('pulse',20)+'</span><div><span class="eyebrow">Resep hari ini</span><p>'+esc(tip(s))+'</p></div></section>'+
+  (free?'':'<section class="rx glass sub"><span class="rx-ic">'+ic('pulse',20)+'</span><div><span class="eyebrow">Resep hari ini</span><p>'+esc(tip(s))+'</p></div></section>')+
   moneyFlowHTML(s)+
-  diagnosisHTML(s,sc)+
+  (free?'':diagnosisHTML(s,sc)+
   assetCard()+
   '<section class="panel glass" aria-labelledby="h-bill"><div class="panel-h"><h2 id="h-bill">Tagihan Mendatang</h2><span class="aside">'+(bl.length?bl.length+' belum dibayar':'Lunas')+'</span></div>'+
    (billRows||'<div class="done sub">'+ic('check',20)+'Semua tagihan bulan ini sudah dibayar</div>')+'</section>'+
@@ -1221,7 +1226,7 @@ var VIEWS={
    '<div class="tile sub"><div class="t-top"><span>Anggaran</span>'+ic('pie',18)+'</div><div class="t-mid"><div><div class="t-val">'+short(s.bSpent)+'</div><div class="t-sub">dari '+short(s.bTot)+'</div></div>'+ring(s.used*100,54,6,Math.round(s.used*100)+'%',us[0]==='good'?'url(#rg)':us[0]==='warn'?'#FFC857':'#FF7A8A','Anggaran terpakai '+Math.round(s.used*100)+' persen')+'</div>'+st(us[0],us[1])+'</div>'+
    '<div class="tile sub"><div class="t-top"><span>Dana Darurat</span>'+ic('shield',18)+'</div><div class="t-val">'+(s.em==null?'–':f1(s.em))+'<small>bulan</small></div><div class="bar" aria-hidden="true"><i style="width:'+clamp((s.em||0)/6*100,0,100)+'%"></i></div><div class="t-sub">Target 6 bulan</div>'+st(em[0],em[1])+'</div>'+
    '<div class="tile sub"><div class="t-top"><span>Beban Tagihan</span>'+ic('gauge',18)+'</div><div class="t-val">'+(s.loadR==null?'–':Math.round(s.loadR*100))+'<small>%</small></div><div class="t-sub">dari pemasukan</div>'+st(ld[0],ld[1])+'</div>'+
-  '</div></section>'+
+  '</div></section>')+
   '<section class="panel glass" aria-labelledby="h-wk"><div class="panel-h"><h2 id="h-wk">Pengeluaran 7 Hari</h2><span class="aside">tanpa tagihan</span></div><div id="chartBox">'+chartHTML(S.sel)+'</div><span class="chart-note">Geser atau ketuk grafik untuk melihat tiap hari.</span></section>'+
   '<section class="panel glass" aria-labelledby="h-cat"><div class="panel-h"><h2 id="h-cat">Pengeluaran per Kategori</h2><span class="aside">'+ymShort(S.ym)+'</span></div>'+
    (cats.length?'<div class="cats">'+cats.map(function(k){var c=CAT[k]||CAT.lain,v=s.byCat[k],pc=s.exp?v/s.exp*100:0;return '<div class="cat" style="--c:'+c.c+'"><div class="cat-h"><span><i></i>'+c.n+'</span><b>'+rp(v)+' · '+Math.round(pc)+'%</b></div><div class="bar" aria-hidden="true"><i style="width:'+pc+'%"></i></div></div>';}).join('')+'</div>':'<div class="empty"><b>Belum ada pengeluaran</b>Catat transaksi untuk melihat sebarannya.</div>')+'</section>'+
@@ -1276,7 +1281,7 @@ var VIEWS={
    (!accountEmail?'<p class="aside">Hubungkan email terlebih dahulu. Di bot Telegram, jalankan /hubungkan lalu masukkan kode yang diberikan.</p>':offlineMode?'<p class="aside">Perubahan hanya tersimpan di browser ini dan tidak disinkronkan ke bot.</p><button type="button" class="btn primary" data-act="reconnect">Sambungkan ke akun server</button>':linkedTelegram?'<button type="button" class="btn" data-act="unlinkTelegram">Putuskan akun</button>':'<p class="aside">Jalankan <b>/hubungkan</b> di bot Doctor Money, lalu masukkan kode sekali pakai di sini. Kode berlaku 10 menit.</p><form class="row2" data-form="telegram-link"><div><label class="lbl" for="linkCode">Kode dari bot (8 angka)</label><input class="field" id="linkCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div><button type="submit" class="btn primary">Hubungkan</button></form>')+'</section>'+
   whatsappHTML()+
   '<section class="panel glass danger-zone" aria-labelledby="h-d"><div class="panel-h"><h2 id="h-d">Data</h2><span class="aside">Tersimpan di server</span></div>'+
-   '<button type="button" class="btn'+(S.armed==='sample'?' warnb':'')+'" data-act="rsample">'+(S.armed==='sample'?'Yakin? Ketuk lagi untuk memulihkan':'Pulihkan data contoh')+'</button>'+
+   (isFree()?'':'<button type="button" class="btn'+(S.armed==='sample'?' warnb':'')+'" data-act="rsample">'+(S.armed==='sample'?'Yakin? Ketuk lagi untuk memulihkan':'Pulihkan data contoh')+'</button>')+
    '<button type="button" class="btn'+(S.armed==='empty'?' warnb':'')+'" data-act="rempty">'+(S.armed==='empty'?'Yakin? Ketuk lagi untuk mengosongkan':'Mulai dari nol (kosongkan semua)')+'</button></section>';
  },
 
@@ -1284,7 +1289,7 @@ var VIEWS={
 
  pro:function(){
   var status=proStatus||{},plans=status.plans||[],payment=status.payment||{},pending=status.pending_order;
-  var stateLabel=proUnavailable?'Status langganan belum dapat diperiksa. Coba sambungkan kembali.':status.status==='trial'?'Uji coba gratis 7 hari':status.active?'Pro aktif hingga '+proDate(status.expires_at):'Pilih paket untuk membuka semua fitur dashboard.';
+  var stateLabel=proUnavailable?'Status langganan belum dapat diperiksa. Coba sambungkan kembali.':status.status==='trial'&&status.active?'Uji coba gratis 1 bulan, berakhir '+proDate(status.trial_ends_at)+'. Setelah itu akun beralih ke paket Gratis.':status.active?'Pro aktif hingga '+proDate(status.expires_at):'Anda memakai paket Gratis: catat hingga '+freeLimit()+' transaksi per bulan. Upgrade untuk transaksi tanpa batas, Diagnose, Anggaran, dan Aset.';
   var cards=plans.map(function(plan){
     return '<article class="glass pro-plan'+(requestedPlan===plan.id?' selected':plan.id==='annual'?' featured':'')+'"><h2>'+esc(plan.name)+'</h2><span class="pro-price">'+rp(plan.price)+'</span><span class="pro-monthly">Setara '+rp(plan.monthly_price)+' / bulan</span>'+(plan.savings?'<span class="pro-save">Hemat '+rp(plan.savings)+'</span>':'<span class="pro-note">Harga bulanan</span>')+'<button type="button" class="btn primary" data-act="proorder" data-arg="'+esc(plan.id)+'"'+(proOrderBusy?' disabled':'')+'>'+(proOrderBusy?'Membuat order…':'Pilih paket')+'</button></article>';
   }).join('');
@@ -1293,7 +1298,7 @@ var VIEWS={
     var orderPayment=pending.payment||payment;
     orderPanel='<section class="panel glass pro-order" aria-label="Order pembayaran"><h2>Order '+esc(pending.order_id)+'</h2><b>'+esc(pending.plan.name)+' · '+rp(pending.amount)+'</b>'+(orderPayment.configured?'<p class="pro-note">Transfer ke '+esc(orderPayment.method)+' · '+esc(orderPayment.account)+'<br>Atas nama '+esc(orderPayment.account_name)+'. Setelah transfer, hubungi admin dan sertakan kode order.</p>':'<p class="pro-note">Instruksi rekening belum dikonfigurasi. Hubungi admin Telegram dan sertakan kode order ini.</p>')+'<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+esc(status.support_url||'https://t.me/DoctorMoneyBOT')+'">Hubungi admin</a><button type="button" class="btn primary" data-act="procheck">Periksa status</button></div><button type="button" class="btn" data-act="proorder" data-arg="'+esc(pending.plan.id)+'">Lihat rekening pembayaran</button></section>';
   }
-  return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&proStatus.active?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'')+(apiToken?'<button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'');
+  return topbar()+'<section class="panel glass" aria-labelledby="pro-title"><span class="eyebrow">Doctor Money Pro</span><h1 class="ttl" id="pro-title">Semua fitur, satu paket.</h1><p class="aside">'+stateLabel+'</p>'+(proUnavailable?'<button type="button" class="btn primary" data-act="procheck">Coba lagi</button>':'')+'</section>'+(cards?'<div class="pro-grid" aria-label="Paket berlangganan">'+cards+'</div>':'')+orderPanel+'<p class="pro-note">Pembayaran manual diverifikasi admin. Masa aktif paket mulai setelah masa coba yang masih berjalan berakhir.</p>'+(proStatus&&!proUnavailable?'<button type="button" class="btn" data-act="prohome">Kembali ke dashboard</button>':'')+(apiToken?'<button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'');
  }
 };
 
@@ -1319,19 +1324,16 @@ function render(keep){
     $('#view').innerHTML=proStatus?VIEWS.pro():'<div class="empty">Memeriksa status Doctor Money Pro…</div>';
     sc.scrollTop=0;return;
   }
-  if(apiToken&&!proStatus.active){
-    S.tab='pro';$('.nav').hidden=true;$('#fab').hidden=true;
-    $('#view').innerHTML=VIEWS.pro();sc.scrollTop=0;return;
-  }
   if(!apiToken&&S.tab==='pro')S.tab='home';
-  $('.nav').hidden=false;$('#fab').hidden=false;
-  $('#view').innerHTML=VIEWS[S.tab]();
+  var locked=isFree()&&!!PRO_TABS[S.tab];
+  $('.nav').hidden=false;$('#fab').hidden=locked;
+  $('#view').innerHTML=locked?lockedHTML():VIEWS[S.tab]();
   if(migration)$('#view').insertAdjacentHTML('afterbegin',migrationHTML());
-  if(S.tab==='diagnose')updateDiagnoseScenario();
+  if(S.tab==='diagnose'&&!locked)updateDiagnoseScenario();
   $$('.nav [data-act="tab"]').forEach(function(b){if(b.dataset.arg===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   $('#fab').setAttribute('aria-label',S.tab==='aset'?'Catat aset':'Tambah transaksi');
-  if(S.tab==='aset'||(S.tab==='home'&&(S.portfolio||[]).length))loadMarket();
-  if(S.tab==='aset')loadYahooMarket();
+  if(!isFree()&&(S.tab==='aset'||(S.tab==='home'&&(S.portfolio||[]).length)))loadMarket();
+  if(S.tab==='aset'&&!locked)loadYahooMarket();
   sc.scrollTop=y;
   var f=null;
   if(S.editName)f=$('#nameIn');else if(S.edit)f=$('#edit-in');
@@ -1391,6 +1393,7 @@ function saveSheet(){
     $('#qtext').focus();return;
   }
   var date=$('#qdate').value||ymd(new Date());
+  if(freeFull(date.slice(0,7))){$('#preview').innerHTML='<span class="pv-err">Paket Gratis dibatasi '+freeLimit()+' transaksi per bulan. Upgrade ke Pro untuk mencatat tanpa batas.</span>';return;}
   var tx={id:uid(),date:date,desc:cleanDesc(text,p)||CAT[sh.cat].n,cat:sh.cat,amt:p.val,w:sh.wallet,type:sh.type};
   S.txs.push(tx);persist();
   S.ym=date.slice(0,7)>curYM()?curYM():date.slice(0,7);
@@ -1491,7 +1494,7 @@ function paintAvatar(){
 }
 function renderAccount(){
   var p=profile||{},st=proStatus||{};
-  var pro=st.status==='trial'&&st.active?'Uji coba hingga '+proDate(st.trial_ends_at):st.active?'Aktif hingga '+proDate(st.expires_at):'Tidak aktif';
+  var pro=st.status==='trial'&&st.active?'Pro (uji coba) hingga '+proDate(st.trial_ends_at):st.active?'Pro hingga '+proDate(st.expires_at):'Gratis';
   $('#acctBody').innerHTML=
    '<form class="stack" data-form="account-profile" novalidate>'+
     '<div class="acct-head"><span class="avatar lg" id="acctAv"></span><div class="stack"><button type="button" class="btn sm" data-act="acctPick">Ubah foto profil</button><button type="button" class="linkbtn" data-act="acctNoPhoto" id="acctNoPhoto" hidden>Hapus foto</button><input type="file" id="acctFile" accept="image/png,image/jpeg,image/webp" hidden></div></div>'+
@@ -1507,7 +1510,7 @@ function renderAccount(){
    '<div>'+
     '<div class="kv"><span>Email</span><b>'+esc(p.email||'Belum ditambahkan')+'</b></div>'+
     '<div class="kv"><span>Bergabung</span><b>'+esc(proDate(p.created_at))+'</b></div>'+
-    '<div class="kv"><span>Doctor Money Pro</span><b>'+esc(pro)+'</b></div>'+
+    '<div class="kv"><span>Paket</span><b>'+esc(pro)+'</b></div>'+
     '<div class="kv"><span>Telegram</span><b>'+(p.telegram_linked?'Terhubung':'Belum terhubung')+'</b></div>'+
     '<div class="kv"><span>WhatsApp</span><b>'+(p.whatsapp_number?'+'+esc(p.whatsapp_number):'Belum terhubung')+'</b></div>'+
    '</div>'+
@@ -1631,7 +1634,7 @@ function copyText(text){
 async function refreshProStatus(){
   if(!apiToken){boot();return;}
   var wasActive=proStatus&&proStatus.active;
-  try{proStatus=await apiRequest('/api/pro/status');proUnavailable=false;if(proStatus.active&&!wasActive){window.location.reload();return;}if(!proStatus.active)S.tab='pro';render(false);}
+  try{proStatus=await apiRequest('/api/pro/status');proUnavailable=false;if(proStatus.active&&!wasActive){window.location.reload();return;}render(false);}
   catch(error){toast(error.message);}
 }
 var ACT={

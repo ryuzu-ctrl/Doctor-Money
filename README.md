@@ -39,7 +39,7 @@ Pada pengguna browser pertama, backend membuat akun kosong. Bila `localStorage` 
 
 ## Doctor Money Pro
 
-Akun baru mendapat uji coba Pro selama 7 hari sejak status Pro pertama kali diperiksa. Semua fitur dashboard memerlukan masa trial atau langganan aktif; API juga menolak akses data setelah masa tersebut berakhir. Paket saat ini Rp20.000 untuk 1 bulan, Rp100.000 untuk 6 bulan, dan Rp180.000 untuk 1 tahun. Paket 6 bulan menghemat Rp20.000 dan paket tahunan menghemat Rp60.000 dibanding harga bulanan.
+Akun baru mendapat uji coba Pro selama 1 bulan sejak status Pro pertama kali diperiksa. Setelah uji coba atau langganan berakhir, akun beralih ke paket Gratis: pencatatan pemasukan dan pengeluaran, dashboard dasar, riwayat transaksi, dan statistik sederhana, dengan batas 50 transaksi per bulan (dihitung per bulan tanggal transaksi; data yang sudah ada tetap bisa diubah atau dihapus). Batas ini ditegakkan API, bot Telegram, dan WhatsApp. Diagnose, Anggaran, dan Aset di dashboard hanya untuk Pro. Paket saat ini Rp20.000 untuk 1 bulan, Rp100.000 untuk 6 bulan, dan Rp180.000 untuk 1 tahun. Paket 6 bulan menghemat Rp20.000 dan paket tahunan menghemat Rp60.000 dibanding harga bulanan.
 
 Pembayaran saat ini diverifikasi manual. Isi `PRO_PAYMENT_METHOD`, `PRO_PAYMENT_ACCOUNT`, dan `PRO_PAYMENT_ACCOUNT_NAME` untuk menampilkan instruksi transfer. Tetapkan `PRO_ADMIN_SECRET` dengan nilai rahasia yang kuat dan berbeda dari `APP_SECRET`. Order tertunda dapat dilihat melalui `GET /api/admin/pro/orders`; setelah pembayaran diverifikasi, aktifkan lewat `POST /api/admin/pro/orders/{order_id}/activate` dengan header `Authorization: Bearer $PRO_ADMIN_SECRET`. Jangan kirim secret admin ke browser atau commit `.env`.
 

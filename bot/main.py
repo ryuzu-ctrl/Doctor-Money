@@ -15,6 +15,7 @@ from telegram.ext import AIORateLimiter, Application, ApplicationBuilder, Callba
 
 from backend.database import Base, SessionLocal, engine
 from backend.models import Account
+from backend.pro import FreeLimitReached
 from backend.repository import account_for_telegram, make_pair_code, read_bot_state
 from bot.handlers import finance, markets, payments
 from bot.keyboards import back_menu, main_menu
@@ -273,6 +274,10 @@ async def post_init(application: Application) -> None:
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = getattr(getattr(update, "effective_user", None), "id", None)
     update_id = getattr(update, "update_id", None)
+    if isinstance(context.error, FreeLimitReached):
+        if isinstance(update, Update) and update.effective_message:
+            await update.effective_message.reply_text(f"⚠️ {context.error}\nBuka menu 💎 Upgrade Premium untuk melihat paket.")
+        return
     logger.exception("Unhandled Telegram update", extra={"user_id": user, "update_id": update_id})
     if isinstance(update, Update) and update.effective_message:
         try:
@@ -387,4 +392,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main()

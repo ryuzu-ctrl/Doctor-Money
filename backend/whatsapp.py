@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .models import Account, WhatsAppLinkCode
+from .pro import FreeLimitReached
 from .repository import apply_account_mutation, hash_secret, now_utc
 from bot.services.finance import CATEGORIES, IN_ORDER, OUT_ORDER, dashboard_score, format_rupiah, parse_transaction
 
@@ -168,7 +169,10 @@ def reply_for(account_id: int, command: dict[str, Any]) -> str:
         _, removed = apply_account_mutation(account_id, _remove_last)
         return "🗑️ Dihapus: " + _line(removed) if removed else "Belum ada transaksi dari WhatsApp yang bisa dihapus."
     if kind == "transaction":
-        state, transaction = apply_account_mutation(account_id, lambda current: _record(current, command))
+        try:
+            state, transaction = apply_account_mutation(account_id, lambda current: _record(current, command))
+        except FreeLimitReached as exc:
+            return "⚠️ " + str(exc)
     else:
         state, transaction = apply_account_mutation(account_id, lambda current: None)
     month = _today(state)[:7]
