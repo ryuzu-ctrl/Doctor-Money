@@ -265,16 +265,16 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 /* Doctor Money AI: floating robot and its panel */
-.dmai{position:fixed;z-index:60;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:60px;height:60px;padding:0;border-radius:22px;border:1px solid rgba(79,227,230,.42);background:linear-gradient(160deg,rgba(44,66,110,.9),rgba(18,26,58,.95));display:grid;place-items:center;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,12,.5),inset 0 1px 0 rgba(255,255,255,.18);animation:dmai-float 4.6s ease-in-out infinite;transition:opacity .2s,transform .2s}
-.dmai::before{content:"";position:absolute;inset:-5px;border-radius:26px;border:1px solid rgba(79,227,230,.5);opacity:0;animation:dmai-glow 4.6s ease-in-out infinite;pointer-events:none}
-.dmai.away{opacity:0;transform:scale(.6);pointer-events:none;animation:none}
-.dmai-bot .dmai-eye{transform-box:fill-box;transform-origin:center;animation:dmai-blink 5.6s infinite}
-.dmai-bot .dmai-tipdot{animation:dmai-beacon 2.8s ease-in-out infinite}
-@keyframes dmai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-@keyframes dmai-glow{0%,100%{opacity:0;transform:scale(.96)}50%{opacity:.55;transform:scale(1.04)}}
-@keyframes dmai-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
-@keyframes dmai-beacon{0%,100%{opacity:1}50%{opacity:.35}}
-.dmai-tip{position:fixed;z-index:60;right:calc(max(18px,env(safe-area-inset-right)) + 70px);bottom:calc(max(18px,env(safe-area-inset-bottom)) + 14px);padding:9px 13px;border-radius:14px 14px 4px 14px;background:rgba(18,28,62,.96);border:1px solid rgba(79,227,230,.35);font:600 12.5px var(--body);color:var(--fg);box-shadow:0 10px 24px rgba(0,0,12,.4);opacity:0;transform:translateX(6px);transition:opacity .25s,transform .25s;pointer-events:none}
+.dmai{--bot:124px;position:fixed;z-index:60;right:max(14px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));width:84px;height:106px;padding:0;border:0;background:none;cursor:pointer;transition:opacity .2s,transform .2s}
+.dmai::after{content:"";position:absolute;left:50%;bottom:-6px;width:58%;height:11px;margin-left:-29%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,10,.6),transparent);animation:dmai-shadow 4.6s ease-in-out infinite;pointer-events:none}
+.dmai:focus-visible{outline-offset:4px;border-radius:24px}
+.dmai.away{opacity:0;transform:scale(.6);pointer-events:none}
+.dmai-bot{display:block;object-fit:contain;-webkit-user-drag:none;user-select:none}
+.dmai>.dmai-bot{position:absolute;left:50%;top:50%;margin:calc(var(--bot)/-2) 0 0 calc(var(--bot)/-2);width:var(--bot);height:var(--bot);max-width:none;filter:drop-shadow(0 12px 12px rgba(0,0,12,.5)) drop-shadow(0 0 12px rgba(79,227,230,.3));animation:dmai-float 4.6s ease-in-out infinite;transition:transform .2s}
+.dmai:hover>.dmai-bot{animation-play-state:paused;transform:translateY(-3px) scale(1.05)}
+@keyframes dmai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes dmai-shadow{0%,100%{transform:scaleX(1);opacity:.9}50%{transform:scaleX(.78);opacity:.55}}
+.dmai-tip{position:fixed;z-index:60;right:calc(max(18px,env(safe-area-inset-right)) + 84px);bottom:calc(max(20px,env(safe-area-inset-bottom)) + 50px);padding:9px 13px;border-radius:14px 14px 4px 14px;background:rgba(18,28,62,.96);border:1px solid rgba(79,227,230,.35);font:600 12.5px var(--body);color:var(--fg);box-shadow:0 10px 24px rgba(0,0,12,.4);opacity:0;transform:translateX(6px);transition:opacity .25s,transform .25s;pointer-events:none}
 .dmai-tip.show{opacity:1;transform:none}
 .dmai-wrap{position:fixed;inset:0;z-index:70}
 .dmai-catch{position:absolute;inset:0;background:rgba(3,6,20,.42);opacity:0;transition:opacity .2s}
@@ -282,7 +282,7 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
 .dmai-wrap.open .dmai-catch{opacity:1}
 .dmai-wrap.open .dmai-panel{transform:none;opacity:1}
 .dmai-head{display:flex;align-items:center;gap:12px}
-.dmai-ava{width:48px;height:48px;flex:none;border-radius:16px;display:grid;place-items:center;background:rgba(79,227,230,.1);border:1px solid rgba(79,227,230,.34)}
+.dmai-ava{width:48px;height:48px;flex:none;border-radius:16px;display:grid;place-items:center;overflow:hidden;background:rgba(79,227,230,.1);border:1px solid rgba(79,227,230,.34)}
 .dmai-head h2{margin:0;font:600 18px/1.2 var(--display)}
 .dmai-head .eyebrow{display:block;margin-top:6px;font-size:11px}
 .dmai-x{margin-left:auto;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;display:grid;place-items:center}
@@ -548,12 +548,12 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
   </footer>
 </div>
 
-<button type="button" class="dmai" id="dmai" aria-label="Doctor Money AI" aria-haspopup="dialog" aria-expanded="false"><svg class="dmai-bot" width="42" height="42" viewBox="0 0 64 64" fill="none" aria-hidden="true"><defs><linearGradient id="dmai-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7CF3F5"/><stop offset="1" stop-color="#2FB8D6"/></linearGradient></defs><path d="M32 12V7" stroke="url(#dmai-g)" stroke-width="2.2" stroke-linecap="round"/><circle class="dmai-tipdot" cx="32" cy="5.5" r="2.6" fill="#7CF3F5"/><rect x="7" y="23" width="5" height="9" rx="2.5" fill="url(#dmai-g)"/><rect x="52" y="23" width="5" height="9" rx="2.5" fill="url(#dmai-g)"/><rect x="12" y="12" width="40" height="30" rx="13" fill="#12244A" stroke="url(#dmai-g)" stroke-width="2.2"/><rect x="17.5" y="19" width="29" height="15" rx="7.5" fill="#050B1E"/><rect class="dmai-eye" x="23" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/><rect class="dmai-eye" x="35.5" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/><path d="M21 47.5h22a5 5 0 0 1 5 5V59H16v-6.5a5 5 0 0 1 5-5z" fill="#12244A" stroke="url(#dmai-g)" stroke-width="2.2" stroke-linejoin="round"/><path d="M25.5 43v2.5a6.5 6.5 0 0 0 13 0V43" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><path d="M32 52v1.5" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><circle cx="32" cy="55.6" r="2.3" fill="#050B1E" stroke="#6EE7A0" stroke-width="1.5"/></svg></button>
+<button type="button" class="dmai" id="dmai" aria-label="Doctor Money AI" aria-haspopup="dialog" aria-expanded="false"><img class="dmai-bot" src="/dr-robot.png" width="124" height="124" alt="" draggable="false"></button>
 <div class="dmai-tip" id="dmaiTip" aria-hidden="true">Doctor Money AI siap membantu</div>
 <div class="dmai-wrap" id="dmaiWrap" hidden>
   <div class="dmai-catch" id="dmaiCatch"></div>
   <section class="dmai-panel" role="dialog" aria-modal="true" aria-labelledby="dmai-title">
-    <div class="dmai-head"><span class="dmai-ava"><svg class="dmai-bot" width="36" height="36" viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12V7" stroke="url(#dmai-g)" stroke-width="2.2" stroke-linecap="round"/><circle class="dmai-tipdot" cx="32" cy="5.5" r="2.6" fill="#7CF3F5"/><rect x="7" y="23" width="5" height="9" rx="2.5" fill="url(#dmai-g)"/><rect x="52" y="23" width="5" height="9" rx="2.5" fill="url(#dmai-g)"/><rect x="12" y="12" width="40" height="30" rx="13" fill="#12244A" stroke="url(#dmai-g)" stroke-width="2.2"/><rect x="17.5" y="19" width="29" height="15" rx="7.5" fill="#050B1E"/><rect class="dmai-eye" x="23" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/><rect class="dmai-eye" x="35.5" y="23" width="5.5" height="7" rx="2.75" fill="#4FE3E6"/><path d="M21 47.5h22a5 5 0 0 1 5 5V59H16v-6.5a5 5 0 0 1 5-5z" fill="#12244A" stroke="url(#dmai-g)" stroke-width="2.2" stroke-linejoin="round"/><path d="M25.5 43v2.5a6.5 6.5 0 0 0 13 0V43" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><path d="M32 52v1.5" stroke="#EAF2FF" stroke-width="1.7" stroke-linecap="round"/><circle cx="32" cy="55.6" r="2.3" fill="#050B1E" stroke="#6EE7A0" stroke-width="1.5"/></svg></span><div><h2 id="dmai-title">Doctor Money AI</h2><span class="eyebrow">Financial Intelligence</span></div><button type="button" class="dmai-x" id="dmaiX" aria-label="Tutup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="dmai-head"><span class="dmai-ava"><img class="dmai-bot" src="/dr-robot.png" width="54" height="54" alt="" draggable="false"></span><div><h2 id="dmai-title">Doctor Money AI</h2><span class="eyebrow">Financial Intelligence</span></div><button type="button" class="dmai-x" id="dmaiX" aria-label="Tutup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <p class="dmai-say"><b>Saya bisa membantu memeriksa kesehatan keuanganmu.</b>Masuk untuk melakukan pemeriksaan dengan data keuanganmu sendiri: skor kesehatan, diagnosis, dan resep keuangan yang bisa langsung dijalankan.</p>
     <ul class="dmai-steps" aria-label="Yang saya periksa"><li>Pemasukan</li><li>Pengeluaran</li><li>Pola belanja</li><li>Resep keuangan</li></ul>
     <a class="btn primary" href="/dashboard?ai=1">Masuk &amp; Periksa Keuangan Saya</a>
