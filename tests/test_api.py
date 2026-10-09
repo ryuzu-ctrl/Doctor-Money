@@ -13,7 +13,7 @@ os.environ["WEBAPP_URL"] = "https://doctor-money.example.web.app"
 
 from backend.app import app
 from backend.database import SessionLocal, engine
-from backend.models import Account, PasswordReset, ProAccess
+from backend.models import Account, PasswordReset, Payment, ProAccess
 from backend.pro import FreeLimitReached
 from backend.repository import account_for_token, apply_account_mutation, make_pair_code, now_utc
 
@@ -570,6 +570,52 @@ def test_ai_analysis_reports_unavailable_without_spending_quota(client, monkeypa
     failed = client.post("/api/ai/analyze", headers=headers, json={"mode": "full"})
     assert failed.status_code == 503 and "belum diaktifkan" in failed.json()["detail"]
     assert client.get("/api/ai/status", headers=headers).json()["used"] == 0
+
+
+def test_admin_lists_accounts_and_grants_or_revokes_pro(client, monkeypatch):
+    monkeypatch.setenv("PRO_ADMIN_SECRET", "test-pro-admin-secret")
+    admin = {"Authorization": "Bearer test-pro-admin-secret"}
+    email = f"admin-{uuid.uuid4().hex[:8]}@Example.com"
+    token = client.post("/api/auth/signup", json={"email": email, "password": "a-long-test-password"}).json()["token"]
+    headers = {"Authorization": "Bearer " + token}
+    client.get("/api/pro/status", headers=headers)
+    end_trial(token)
+
+    assert client.get("/api/admin/accounts").status_code == 401
+    assert client.get("/api/admin/accounts", headers={"Authorization": "Bearer wrong"}).status_code == 401
+    assert client.get("/api/admin/accounts", headers=admin, params={"q": "100%_nobody"}).json()["accounts"] == []
+    found = client.get("/api/admin/accounts", headers=admin, params={"q": email[:14].upper()}).json()
+    assert found["total"] >= 1 and [row["email"] for row in found["accounts"]] == [email.lower()]
+    row = found["accounts"][0]
+    assert row["tier"] == "free" and row["ends_at"] is None
+
+    assert client.post(f"/api/admin/accounts/{row['id']}/pro", json={"plan_id": "annual"}).status_code == 401
+    granted = client.post(f"/api/admin/accounts/{row['id']}/pro", headers=admin, json={"plan_id": "annual"}).json()
+    assert granted["tier"] == "pro" and granted["plan"] == "1 tahun" and granted["ends_at"]
+    assert client.get("/api/pro/status", headers=headers).json()["active"] is True
+    assert client.post("/api/admin/accounts/999999/pro", headers=admin, json={"plan_id": "monthly"}).status_code == 404
+
+    revoked = client.delete(f"/api/admin/accounts/{row['id']}/pro", headers=admin).json()
+    assert revoked["tier"] == "free"
+    status = client.get("/api/pro/status", headers=headers).json()
+    assert status["active"] is False and status["tier"] == "free"
+
+
+def test_admin_approves_bot_payment_once(client, monkeypatch):
+    monkeypatch.setenv("PRO_ADMIN_SECRET", "test-pro-admin-secret")
+    admin = {"Authorization": "Bearer test-pro-admin-secret"}
+    token, _ = account(client)
+    with SessionLocal() as db:
+        account_id = account_for_token(db, token).id
+        payment = Payment(account_id=account_id, telegram_id=777001, plan_id="monthly", amount=20_123, status="pending_review", created_at=now_utc(), expires_at=now_utc() + timedelta(hours=24), proof_at=now_utc())
+        db.add(payment)
+        db.commit()
+        payment_id = payment.id
+    listed = client.get("/api/admin/payments", headers=admin).json()["payments"]
+    assert [(row["id"], row["amount"]) for row in listed if row["id"] == payment_id] == [(payment_id, 20_123)]
+    assert client.post(f"/api/admin/payments/{payment_id}/approve", headers=admin).json() == {"status": "approved"}
+    assert client.post(f"/api/admin/payments/{payment_id}/reject", headers=admin).status_code == 409
+    assert all(row["id"] != payment_id for row in client.get("/api/admin/payments", headers=admin).json()["payments"])
 
 
 def test_root_and_dashboard_routes_are_available(client):

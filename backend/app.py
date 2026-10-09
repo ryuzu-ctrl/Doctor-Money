@@ -21,13 +21,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import httpx
 
 from .database import Base, SessionLocal, engine, migrate_auth_schema
-from .models import Account, PasswordReset, ProAccess, ProOrder
+from .models import Account, Payment, PasswordReset, ProAccess, ProOrder
 from .pro import FREE_LIMIT_MESSAGE, FREE_MONTHLY_TRANSACTIONS, PRO_PLANS, activate_pro_plan, ensure_pro_access, month_counts, over_free_limit, pro_access_active, pro_payment_config
 from .repository import account_for_token, hash_password, hash_secret, issue_token, make_pair_code, new_account, now_utc, put_state, revoke_account_tokens, revoke_token, state_of, use_pair_code, verify_password
 from .security import InitDataError, validate_init_data
@@ -56,6 +56,7 @@ if webapp_url:
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 DASHBOARD_FILE = FRONTEND_DIR / "dashboard.html"
 LANDING_FILE = FRONTEND_DIR / "index.html"
+ADMIN_FILE = FRONTEND_DIR / "admin.html"
 _rate_lock = threading.Lock()
 _rate_events: dict[str, list[float]] = {}
 
@@ -141,6 +142,10 @@ class StateRequest(BaseModel):
 class AiAnalyzeRequest(BaseModel):
     mode: Literal["full", "spending", "future", "savings", "goals"] = "full"
     context: Literal["", "home", "tx", "diagnose", "bud", "aset", "wal"] = ""
+
+
+class AdminGrantRequest(BaseModel):
+    plan_id: Literal["monthly", "six_months", "annual"]
 
 
 class ImportRequest(BaseModel):
@@ -229,6 +234,89 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def admin_account_payload(account: Account, access: ProAccess | None) -> dict[str, Any]:
+    active = access is not None and pro_access_active(access)
+    paid = active and access.status == "active"
+    return {
+        "id": account.id,
+        "email": account.email,
+        "name": str(state_of(account).get("name") or "Sobat"),
+        "telegram_id": account.telegram_id,
+        "whatsapp_number": account.whatsapp_number,
+        "created_at": iso_utc(account.created_at),
+        "tier": "pro" if paid else "trial" if active else "free",
+        "plan": PRO_PLANS[access.plan_id]["name"] if paid and access.plan_id in PRO_PLANS else None,
+        "ends_at": iso_utc(access.expires_at if paid else access.trial_ends_at) if active else None,
+    }
+
+
+@app.get("/api/admin/accounts")
+def admin_accounts(q: str = "", authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    query = select(Account)
+    term = q.strip()[:120]
+    if term:
+        pattern = "%" + term.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        matches = [func.lower(Account.email).like(pattern, escape="\\"), Account.whatsapp_number.like(pattern, escape="\\")]
+        if term.isdigit() and len(term) < 19:
+            matches += [Account.id == int(term), Account.telegram_id == int(term)]
+        query = query.where(or_(*matches))
+    accounts = db.scalars(query.order_by(Account.created_at.desc()).limit(50)).all()
+    access = {row.account_id: row for row in db.scalars(select(ProAccess).where(ProAccess.account_id.in_([account.id for account in accounts]))).all()}
+    return {"total": db.scalar(select(func.count()).select_from(Account)) or 0, "accounts": [admin_account_payload(account, access.get(account.id)) for account in accounts]}
+
+
+@app.post("/api/admin/accounts/{account_id}/pro")
+def admin_grant_pro(account_id: int, payload: AdminGrantRequest, authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    account = db.get(Account, account_id)
+    if account is None:
+        raise HTTPException(status_code=404, detail="Akun tidak ditemukan")
+    access = activate_pro_plan(db, account, payload.plan_id)
+    db.commit()
+    logger.info("Admin granted Pro", extra={"account_id": account.id, "plan_id": payload.plan_id})
+    return admin_account_payload(account, access)
+
+
+@app.delete("/api/admin/accounts/{account_id}/pro")
+def admin_revoke_pro(account_id: int, authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    account = db.get(Account, account_id)
+    if account is None:
+        raise HTTPException(status_code=404, detail="Akun tidak ditemukan")
+    access = ensure_pro_access(db, account)
+    now = now_utc()
+    access.status = "expired"
+    if access.expires_at is not None:
+        access.expires_at = min(access.expires_at, now)
+    access.updated_at = now
+    db.commit()
+    logger.info("Admin revoked Pro", extra={"account_id": account.id})
+    return admin_account_payload(account, access)
+
+
+@app.get("/api/admin/payments")
+def admin_payments(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_pro_admin(authorization)
+    rows = db.scalars(select(Payment).where(Payment.status == "pending_review").order_by(Payment.proof_at)).all()
+    emails = dict(db.execute(select(Account.id, Account.email).where(Account.id.in_([row.account_id for row in rows]))).all())
+    return {"payments": [{"id": row.id, "account_id": row.account_id, "email": emails.get(row.account_id), "telegram_id": row.telegram_id, "plan": plan_payload(row.plan_id) if row.plan_id in PRO_PLANS else None, "amount": row.amount, "proof_at": iso_utc(row.proof_at)} for row in rows]}
+
+
+@app.post("/api/admin/payments/{payment_id}/{decision}")
+def admin_decide_payment(payment_id: int, decision: Literal["approve", "reject"], authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, str]:
+    require_pro_admin(authorization)
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    if payment.status != "pending_review":
+        raise HTTPException(status_code=409, detail="Pembayaran ini sudah diputuskan")
+    # The bot's payments job sees the new status, extends Pro once, and notifies the user on Telegram.
+    payment.status = "approved" if decision == "approve" else "rejected"
+    db.commit()
+    return {"status": payment.status}
+
+
 @app.get("/api/pro/status")
 def pro_status(db: Session = Depends(get_db), account: Account = Depends(current_account)) -> dict[str, Any]:
     access = ensure_pro_access(db, account)
@@ -267,7 +355,8 @@ def create_pro_order(payload: ProOrderRequest, db: Session = Depends(get_db), ac
 def pending_pro_orders(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> dict[str, Any]:
     require_pro_admin(authorization)
     orders = db.scalars(select(ProOrder).where(ProOrder.status == "pending").order_by(ProOrder.created_at)).all()
-    return {"orders": [{"order_id": order.id, "account_id": order.account_id, "plan": plan_payload(order.plan_id), "amount": order.amount, "created_at": iso_utc(order.created_at)} for order in orders]}
+    emails = dict(db.execute(select(Account.id, Account.email).where(Account.id.in_([order.account_id for order in orders]))).all())
+    return {"orders": [{"order_id": order.id, "account_id": order.account_id, "email": emails.get(order.account_id), "plan": plan_payload(order.plan_id), "amount": order.amount, "created_at": iso_utc(order.created_at)} for order in orders]}
 
 
 @app.post("/api/admin/pro/orders/{order_id}/activate")
@@ -848,6 +937,11 @@ def landing_page() -> HTMLResponse:
 @app.get("/dashboard")
 def dashboard_page() -> FileResponse:
     return FileResponse(DASHBOARD_FILE, media_type="text/html")
+
+
+@app.get("/admin")
+def admin_page() -> FileResponse:
+    return FileResponse(ADMIN_FILE, media_type="text/html")
 
 
 if os.getenv("BOT_TOKEN"):

@@ -118,6 +118,8 @@ button{font-family:inherit}
 .dmai-sec li .ic{flex:none;margin-top:1px;color:var(--c,var(--accent))}
 .dmai-sec li em{flex:none;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:rgba(79,227,230,.16);color:var(--accent);font:700 11px var(--body);font-style:normal}
 .dmai-panel p.dmai-text{margin:0;font-size:13.5px;line-height:1.55;color:var(--fg);opacity:.9}
+.boot{min-height:calc(100dvh - 190px);display:flex;align-items:center}
+.boot-card{width:100%;padding:18px;border-radius:26px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(180deg,rgba(26,40,82,.98),rgba(12,16,42,.99));border:1px solid rgba(79,227,230,.34);box-shadow:0 24px 60px rgba(0,0,12,.5),inset 0 1px 0 rgba(255,255,255,.14)}
 .nav button.locked{position:relative}
 .nav button.locked::after{content:"PRO";position:absolute;top:1px;left:50%;margin-left:5px;padding:1.5px 4px;border-radius:6px;background:var(--warn);color:#2A1C00;font:700 7px/1 var(--body);letter-spacing:.04em}
 .pay-box{padding:14px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
@@ -766,19 +768,33 @@ async function boot(){
   if(wantAI&&apiToken&&apiReady&&!migration){wantAI=false;try{history.replaceState(null,'',window.location.pathname);}catch(e){}openAI();}
   if(requestedPlan&&!requestedPlanShown&&apiToken&&proStatus&&!proUnavailable&&!migration&&(proStatus.plans||[]).length){requestedPlanShown=true;try{history.replaceState(null,'',window.location.pathname);}catch(e){}openPay(requestedPlan);}
 }
+var BOOT_STEPS=['Menghubungkan ke akun','Memuat profil','Memuat data keuangan','Menyiapkan dashboard'];
+function bootHTML(){
+  return '<div class="boot"><section class="boot-card" role="status" aria-label="Memuat dashboard">'+
+   '<div class="dmai-head"><span class="dmai-ava">'+robotImg(52)+'</span><div><h2>Doctor Money AI</h2><span class="eyebrow">Menyiapkan dashboard</span></div></div>'+
+   '<div class="dmai-scan">'+robotImg(104)+'</div><p class="dmai-meta">Memuat data keuanganmu…</p>'+
+   '<ul class="dmai-steps" id="bootSteps">'+BOOT_STEPS.map(function(t,i){return '<li'+(i?'':' class="on"')+'>'+t+'</li>';}).join('')+'</ul></section></div>';
+}
+function showBoot(){$('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;$('#view').innerHTML=bootHTML();$('#screen').scrollTop=0;}
+// Marks real progress through bootApp; classes are swapped in place so the scan animation keeps running.
+function bootStep(n){$$('#bootSteps li').forEach(function(li,i){li.className=i<n?'ok':i===n?'on':'';});}
 async function bootApp(){
   var webApp=window.Telegram&&window.Telegram.WebApp;
   if(webApp){webApp.ready();webApp.expand();var theme=webApp.themeParams||{};if(theme.bg_color)document.documentElement.style.setProperty('--tg-theme-bg',theme.bg_color);if(theme.text_color)document.documentElement.style.setProperty('--tg-theme-text',theme.text_color);}
   if(!apiToken){apiReady=false;render(false);return;}
+  showBoot();
   try{
     var remote;
     try{proStatus=await apiRequest('/api/pro/status');}
     catch(error){if(error.status!==401)throw error;apiToken='';localStorage.removeItem(SESSION_KEY);accountEmail='';authMessage='Sesi berakhir. Silakan masuk kembali.';apiReady=false;showAuth=true;render(false);return;}
+    bootStep(1);
     try{profile=await apiRequest('/api/auth/profile');accountEmail=profile.email||'';}
     catch(error){if(error.status===401)throw error;profile=null;try{accountEmail=(await apiRequest('/api/auth/me')).email||'';}catch(meError){if(meError.status===401)throw meError;}}
     proUnavailable=false;
     if(offlineMode){apiReady=false;render(false);return;}
+    bootStep(2);
     if(!remote)remote=await apiRequest('/api/state');
+    bootStep(3);
     var base=null;try{base=JSON.parse(localStorage.getItem(BASE_KEY));}catch(e){}
     if(legacyState&&remote.revision===0&&!remote.state.txs.length&&(!base||JSON.stringify(legacyState)!==JSON.stringify(base)))migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});
     else if(legacyState&&!base&&remote.revision>0&&JSON.stringify(legacyState)!==JSON.stringify(remote.state)){migration=await apiRequest('/api/import/preview',{method:'POST',body:JSON.stringify(legacyState)});migration.mode='existing';}
@@ -1414,7 +1430,7 @@ function render(keep){
   }
   if(apiToken&&(!proStatus||proUnavailable)){
     $('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
-    $('#view').innerHTML=proStatus?VIEWS.pro():'<div class="empty">Memeriksa status Doctor Money Pro…</div>';
+    $('#view').innerHTML=proStatus?VIEWS.pro():bootHTML();
     sc.scrollTop=0;return;
   }
   if(!apiToken&&S.tab==='pro')S.tab='home';
@@ -2028,8 +2044,7 @@ window.setInterval(function(){if(S.tab==='aset'&&!document.hidden){loadMarket();
 
 initNav();
 setTimeout(function(){var t=$('#dmaiTip');if(AI.open||$('#dmai').hidden||S.sheet||S.asheet||S.acct||S.pay)return;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4500);},3500);
-$('#view').innerHTML='<div class="empty">Menghubungkan ke penyimpanan Doctor Money…</div>';
-$('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
+showBoot();
 boot();
 })();
 </script>
