@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" /><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/logo.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" /><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0D3248"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Doctor Money"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Doctor Money</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1382,6 +1382,7 @@ var VIEWS={
   return topbar()+'<div><h1 class="ttl">Dompet</h1></div>'+
   '<section class="panel glass" aria-label="Total saldo"><span class="eyebrow">Total semua dompet</span><div class="big-num">'+(sumAll<0?'−':'')+rp(sumAll)+'</div><div class="alloc" aria-hidden="true">'+S.wallets.map(function(w){var b=Math.max(0,bal(w));return b>0?'<i style="flex:'+b+';background:'+w.c+'"></i>':'';}).join('')+'</div></section>'+
   '<section class="panel glass" aria-labelledby="h-w"><div class="panel-h"><h2 id="h-w">Daftar Dompet</h2><span class="aside">Ketuk untuk ubah saldo awal</span></div>'+cards+'</section>'+
+  installHTML()+
   '<section class="panel glass" aria-labelledby="h-account"><div class="panel-h"><h2 id="h-account">Akun</h2></div>'+
    (!apiToken?'<p class="aside">Mode lokal aktif. Data hanya tersimpan di browser ini.</p><button type="button" class="btn primary" data-act="authLogin">Masuk atau buat akun untuk menyinkronkan data</button>':accountEmail?'<span class="aside">'+esc(accountEmail)+'</span>':'<p class="aside">Akun lama ini belum memiliki login email. Tambahkan email dan kata sandi agar bisa masuk kembali di perangkat lain.</p><form class="stack" data-form="auth-upgrade"><div><label class="lbl" for="upgradeEmail">Email</label><input class="field" id="upgradeEmail" type="email" inputmode="email" maxlength="320" required></div><div><label class="lbl" for="upgradePassword">Kata sandi (minimal 12 karakter)</label><input class="field" id="upgradePassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div><button type="submit" class="btn primary">Tambah login email</button></form>')+
    (apiToken?'<button type="button" class="btn" data-act="account">Pengaturan akun</button><button type="button" class="btn" data-act="logout">Keluar dari akun</button>':'')+'</section>'+
@@ -1450,6 +1451,12 @@ function render(keep){
   if(f){f.focus({preventScroll:true});f.select();}
 }
 
+/* ---------- install as an app ---------- */
+var installPrompt=null;
+function installHTML(){return installPrompt?'<section class="panel glass" aria-labelledby="h-install"><div class="panel-h"><h2 id="h-install">Instal aplikasi</h2></div><p class="aside">Pasang Doctor Money di layar utama supaya terbuka seperti aplikasi, tanpa bilah alamat browser.</p><button type="button" class="btn primary" data-act="install">Instal Doctor Money</button></section>':'';}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installPrompt=e;if(S.tab==='wal'&&!S.sheet&&!S.edit&&!$('.nav').hidden)render();});
+window.addEventListener('appinstalled',function(){installPrompt=null;toast('Doctor Money terpasang di perangkat ini.');if(S.tab==='wal'&&!$('.nav').hidden)render();});
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});
 /* ---------- Doctor Money AI ---------- */
 var AI={open:false,view:'intro',status:null,result:null,note:'',step:0,timer:null,run:0};
 var AI_STEPS=['Memeriksa pemasukan','Memeriksa pengeluaran','Menganalisis pola','Menyiapkan diagnosis'];
@@ -1858,6 +1865,7 @@ var ACT={
  add:function(){if(S.tab==='aset'&&!isFree())openAsset(S.aflt==='all'?'':S.aflt);else openSheet();},close:closeSheet,
  aadd:function(g){openAsset(g);},aclose:closeAsset,
  account:openAccount,acctClose:closeAccount,
+ install:function(){var p=installPrompt;if(!p)return;installPrompt=null;p.prompt();render();},
  ai:openAI,aiClose:closeAI,aiRun:function(g){runAI(g);},aiBack:function(){AI.view='intro';renderAI();},
  aiDiagnose:function(){closeAI();S.tab='diagnose';S.edit=null;render(false);},
  aiUpgrade:function(){closeAI();S.tab='pro';render(false);},

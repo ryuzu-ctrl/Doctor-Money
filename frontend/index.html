@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" /><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/logo.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" /><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0D3248"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Doctor Money"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Doctor Money</title>
 <meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" />
 <meta name="description" content="Catat, pantau, dan periksa kesehatan keuangan Anda, termasuk aset crypto dan saham, dari dashboard web dan bot Telegram.">
@@ -318,6 +318,7 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap}
       <div class="cta">
         <a class="btn primary" data-link="bot" href="https://t.me/DoctorMoneyBOT" target="_blank" rel="noopener">Mulai di Telegram <span data-i="right" data-s="18"></span></a>
         <a class="btn" data-link="dashboard" href="/dashboard">Buka Dashboard</a>
+        <button type="button" class="btn" id="installBtn" hidden>Instal aplikasi</button>
       </div>
       <div class="proof">
         <span><span data-i="check" data-s="16"></span>Catat dengan bahasa sehari-hari</span>
@@ -762,6 +763,14 @@ function ask(it){
   },reduce()?0:550);
 }
 function reduce(){return window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;}
+/* Install as an app: the button appears only when the browser says the app can be installed. */
+(function(){
+  var prompt=null,button=document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();prompt=e;button.hidden=false;});
+  window.addEventListener('appinstalled',function(){prompt=null;button.hidden=true;});
+  button.addEventListener('click',function(){if(!prompt)return;var p=prompt;prompt=null;button.hidden=true;p.prompt();});
+  if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});
+})();
 /* Doctor Money AI: the robot opens a short intro; the examination itself runs in the dashboard after login. */
 (function(){
   var bot=document.getElementById('dmai'),wrap=document.getElementById('dmaiWrap'),tip=document.getElementById('dmaiTip'),open=false;
