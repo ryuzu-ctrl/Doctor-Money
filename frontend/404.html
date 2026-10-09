@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Halaman tidak ditemukan · Doctor Money</title>
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<meta name="theme-color" content="#0D3248">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --page:#050716; --fg:#EAF2FF; --muted:#A8B7D0;
+  --accent:#4FE3E6; --accent-2:#2FB8D6; --accent-ink:#04222A;
+  --line:rgba(255,255,255,.14);
+  --display:'Sora','Plus Jakarta Sans',system-ui,sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;min-height:100dvh;padding:24px 16px;display:grid;place-items:center;background:var(--page);color:var(--fg);font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 600px at 85% -5%,rgba(79,227,230,.16),transparent 62%),radial-gradient(800px 640px at -5% 60%,rgba(61,116,217,.16),transparent 62%)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+main{width:min(100%,520px);display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font:600 16px var(--display);letter-spacing:-.01em}
+.brand img{flex:none;border-radius:11px;object-fit:cover}
+.brand b{color:var(--accent);font-weight:600}
+.code{margin-top:28px;font:600 15px/1 var(--display);letter-spacing:.04em;color:var(--accent);font-variant-numeric:tabular-nums}
+h1{margin:0;font:700 clamp(32px,7vw,48px)/1.08 var(--display);letter-spacing:-.03em;text-wrap:balance}
+p{margin:0;color:var(--muted);max-width:46ch;text-wrap:pretty}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:50px;padding:0 24px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--fg);font:600 15px var(--body);text-decoration:none;transition:transform .2s cubic-bezier(.2,.8,.3,1),background .2s}
+.btn:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px) scale(.98)}
+.btn.primary{background:linear-gradient(145deg,#7CF3F5,var(--accent-2));color:var(--accent-ink);border-color:transparent;box-shadow:0 10px 30px rgba(79,227,230,.3)}
+.btn.primary:hover{background:linear-gradient(145deg,#97F7F8,#3CC6E4)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="/"><img src="/icons/icon-192.png" width="34" height="34" alt=""><span>Doctor<b>Money</b></span></a>
+  <span class="code">404</span>
+  <h1>Halaman ini tidak ada dalam catatan.</h1>
+  <p>Alamatnya mungkin salah ketik atau halamannya sudah dipindahkan. Data keuangan Anda tetap aman di dashboard.</p>
+  <div class="cta">
+    <a class="btn primary" href="/dashboard">Buka Dashboard</a>
+    <a class="btn" href="/">Ke halaman utama</a>
+  </div>
+</main>
+</body>
+</html>

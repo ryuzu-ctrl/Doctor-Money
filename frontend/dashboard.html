@@ -1,14 +1,26 @@
-<!doctype html><html><head><meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE" /><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" href="/logo.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0D3248"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Doctor Money"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Doctor Money</title>
+<meta name="description" content="Dashboard Doctor Money: saldo, transaksi, anggaran, aset, dan skor kesehatan keuangan Anda.">
+<meta name="google-site-verification" content="5o57rs3a3WeTYr0eMpvNBa4kJbw3qU2ITByOSBjgqqE">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0D3248">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Doctor Money">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Layout: phone-shaped dark glass app. One scrolling screen, floating nav pill with a raised "+" button, bottom sheet for quick add. Full-bleed under 520px. */
 :root{
-  color-scheme:dark;
+  color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   --page:#050716;
-  --sky:#0D3248; --mid:#0A1232; --deep:#170C3A;
+  --sky:#0D3248; --mid:#0A1232; --deep:#0B1B40;
   --fg:#EAF2FF; --muted:#A3B3CC; --faint:#71829E;
   --accent:#4FE3E6; --accent-ink:#04222A;
   --good:#6EE7A0; --warn:#FFC857; --bad:#FF7A8A;
@@ -17,19 +29,25 @@
   --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+img{max-width:100%}
+[hidden]:not([hidden=until-found i]){display:none!important}
 html,body{height:100%}
 body{margin:0;padding:0;background:var(--page);color:var(--fg);font:400 14px/1.45 var(--body);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;overflow:hidden}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(620px 420px at 82% 8%,rgba(79,227,230,.14),transparent 62%),radial-gradient(700px 520px at 8% 92%,rgba(124,92,255,.18),transparent 62%)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(620px 420px at 82% 8%,rgba(79,227,230,.14),transparent 62%),radial-gradient(700px 520px at 8% 92%,rgba(61,116,217,.16),transparent 62%)}
 button{font-family:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .phone{position:relative;margin:auto;width:100%;height:100%;overflow:hidden;background:linear-gradient(180deg,var(--sky) 0%,var(--mid) 46%,var(--deep) 100%);box-shadow:0 40px 90px rgba(0,0,10,.65),0 0 0 1px rgba(255,255,255,.04)}
 .phone::before,.phone::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
 .phone::before{width:340px;height:340px;right:-150px;top:150px;background:radial-gradient(circle,rgba(79,227,230,.2),transparent 68%)}
-.phone::after{width:380px;height:380px;left:-190px;bottom:60px;background:radial-gradient(circle,rgba(130,90,255,.24),transparent 68%)}
+.phone::after{width:380px;height:380px;left:-190px;bottom:60px;background:radial-gradient(circle,rgba(61,116,217,.2),transparent 68%)}
 @media (min-width:521px){body{padding:16px}.phone{width:min(100%,420px);height:min(900px,100%);border-radius:46px;border:8px solid #0A0E22;outline:1px solid rgba(255,255,255,.14)}}
 .screen{position:absolute;inset:0;z-index:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 16px 132px;scrollbar-width:none}
 .screen::-webkit-scrollbar{display:none}
 .stack{display:flex;flex-direction:column;gap:14px}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+#view.enter>*{animation:rise .55s cubic-bezier(.16,1,.3,1) backwards}
+#view.enter>:nth-child(2){animation-delay:.05s}#view.enter>:nth-child(3){animation-delay:.1s}#view.enter>:nth-child(4){animation-delay:.15s}#view.enter>:nth-child(5){animation-delay:.2s}#view.enter>:nth-child(n+6){animation-delay:.25s}
 
 /* glass surfaces */
 .glass{background:linear-gradient(160deg,rgba(255,255,255,.105),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:24px;-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 12px 32px rgba(0,0,12,.28)}
@@ -66,17 +84,17 @@ button{font-family:inherit}
 .lock .btn{height:50px;font-size:15px}
 .lock-note{margin:0;text-align:center;font-size:12px;color:var(--muted)}
 /* Doctor Money AI: floating robot and its panel */
-.dmai{--bot:104px;position:absolute;z-index:19;right:8px;bottom:100px;width:70px;height:88px;padding:0;border:0;background:none;cursor:pointer;transition:opacity .2s,transform .2s}
+.dmai{--bot:136px;position:absolute;z-index:19;right:8px;bottom:100px;width:92px;height:116px;padding:0;border:0;background:none;cursor:pointer;transition:opacity .2s,transform .2s}
 .dmai::after{content:"";position:absolute;left:50%;bottom:-6px;width:58%;height:11px;margin-left:-29%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,10,.6),transparent);animation:dmai-shadow 4.6s ease-in-out infinite;pointer-events:none}
 .dmai:focus-visible{outline-offset:4px;border-radius:24px}
 .dmai.away{opacity:0;transform:scale(.6);pointer-events:none}
 .dmai-bot{display:block;object-fit:contain;-webkit-user-drag:none;user-select:none}
-.dmai>.dmai-bot{position:absolute;left:50%;top:50%;margin:calc(var(--bot)/-2) 0 0 calc(var(--bot)/-2);width:var(--bot);height:var(--bot);max-width:none;filter:drop-shadow(0 12px 12px rgba(0,0,12,.5)) drop-shadow(0 0 12px rgba(79,227,230,.3));animation:dmai-float 4.6s ease-in-out infinite;transition:transform .2s}
+.dmai>.dmai-bot{position:absolute;left:50%;top:50%;margin:calc(var(--bot)/-2) 0 0 calc(var(--bot)/-2);width:var(--bot);height:var(--bot);max-width:none;filter:drop-shadow(0 12px 12px rgba(0,0,12,.5));animation:dmai-float 4.6s ease-in-out infinite;transition:transform .2s}
 .dmai:hover>.dmai-bot{animation-play-state:paused;transform:translateY(-3px) scale(1.05)}
 @keyframes dmai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes dmai-shadow{0%,100%{transform:scaleX(1);opacity:.9}50%{transform:scaleX(.78);opacity:.55}}
 @keyframes dmai-beacon{0%,100%{opacity:1}50%{opacity:.35}}
-.dmai-tip{position:absolute;z-index:19;right:80px;bottom:140px;padding:8px 12px;border-radius:14px 14px 4px 14px;background:rgba(18,28,62,.96);border:1px solid rgba(79,227,230,.35);font:600 12px var(--body);color:var(--fg);box-shadow:0 10px 24px rgba(0,0,12,.4);opacity:0;transform:translateX(6px);transition:opacity .25s,transform .25s;pointer-events:none}
+.dmai-tip{position:absolute;z-index:19;right:102px;bottom:154px;padding:8px 12px;border-radius:14px 14px 4px 14px;background:rgba(18,28,62,.96);border:1px solid rgba(79,227,230,.35);font:600 12px var(--body);color:var(--fg);box-shadow:0 10px 24px rgba(0,0,12,.4);opacity:0;transform:translateX(6px);transition:opacity .25s,transform .25s;pointer-events:none}
 .dmai-tip.show{opacity:1;transform:none}
 .dmai-wrap{position:absolute;inset:0;z-index:35}
 .dmai-catch{position:absolute;inset:0;background:rgba(3,6,20,.42);opacity:0;transition:opacity .2s}
@@ -98,9 +116,9 @@ button{font-family:inherit}
 .dmai-meta{margin:0;text-align:center;font-size:12px;color:var(--muted)}
 .dmai-scan{position:relative;width:112px;height:112px;margin:6px auto 0;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(79,227,230,.16),transparent 70%);border:1px solid rgba(79,227,230,.3);overflow:hidden}
 .dmai-scan::before{content:"";position:absolute;inset:8px;border-radius:50%;border:1px dashed rgba(79,227,230,.4);animation:dmai-spin 9s linear infinite}
-.dmai-scan::after{content:"";position:absolute;left:0;right:0;height:26px;top:-26px;background:linear-gradient(180deg,transparent,rgba(79,227,230,.5));border-bottom:1.5px solid var(--accent);animation:dmai-sweep 1.9s ease-in-out infinite}
+.dmai-scan::after{content:"";position:absolute;left:0;right:0;height:26px;top:0;transform:translateY(-26px);background:linear-gradient(180deg,transparent,rgba(79,227,230,.5));border-bottom:1.5px solid var(--accent);animation:dmai-sweep 1.9s ease-in-out infinite}
 @keyframes dmai-spin{to{transform:rotate(360deg)}}
-@keyframes dmai-sweep{0%{top:-26px}100%{top:112px}}
+@keyframes dmai-sweep{to{transform:translateY(112px)}}
 .dmai-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
 .dmai-steps li{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--faint)}
 .dmai-steps li::before{content:"";width:9px;height:9px;flex:none;border-radius:50%;border:1.5px solid currentColor}
@@ -139,8 +157,9 @@ button{font-family:inherit}
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.brand .logo{object-fit:cover;border-radius:11px}
 .wm{font:600 16px var(--display);letter-spacing:-.01em}.wm b{color:var(--accent);font-weight:600}
-.avatar{width:40px;height:40px;padding:0;overflow:hidden;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:linear-gradient(145deg,rgba(79,227,230,.35),rgba(124,92,255,.35));color:var(--fg);font:700 15px var(--display);cursor:pointer}
+.avatar{width:40px;height:40px;padding:0;overflow:hidden;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:rgba(79,227,230,.16);color:var(--fg);font:700 15px var(--display);cursor:pointer}
 .avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .avatar.lg{width:76px;height:76px;font-size:28px;cursor:default}
 .hello{margin:18px 0 10px;font:600 26px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
@@ -154,7 +173,7 @@ button{font-family:inherit}
 .ic{flex:none}
 
 /* hero */
-.hero{padding:18px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(150deg,rgba(79,227,230,.17),rgba(255,255,255,.05) 46%,rgba(124,140,255,.13))}
+.hero{padding:18px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(150deg,rgba(79,227,230,.17),rgba(255,255,255,.04) 62%)}
 .hero-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .bal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font:700 30px/1.1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .bal .cur{font-size:15px;color:var(--muted);font-weight:600}
@@ -241,7 +260,7 @@ button{font-family:inherit}
 .dx-comparison b{font-variant-numeric:tabular-nums;white-space:nowrap}
 .dx-comparison .dx-improved{color:var(--good)}
 .dx-note{font-size:11.5px;color:var(--faint)}
-.money-flow{gap:14px;background:linear-gradient(145deg,rgba(79,227,230,.12),rgba(255,255,255,.035) 55%,rgba(124,92,255,.1))}
+.money-flow{gap:14px;background:linear-gradient(145deg,rgba(79,227,230,.12),rgba(255,255,255,.035) 60%)}
 .flow-total{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:14px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid var(--line-soft)}
 .flow-total span{display:block;font-size:12px;color:var(--muted)}
 .flow-total b{display:block;margin-top:3px;font:700 23px/1.15 var(--display);font-variant-numeric:tabular-nums}
@@ -249,7 +268,7 @@ button{font-family:inherit}
 .flow-list{display:flex;flex-direction:column;gap:12px}
 .flow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
 .flow-label{display:flex;align-items:center;gap:9px;min-width:0}
-.flow-emoji{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--c) 15%,transparent);font-size:17px}
+.flow-ic{flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);border:1px solid color-mix(in srgb,var(--c) 26%,transparent)}
 .flow-label b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .flow-label small{display:block;color:var(--muted);font-size:11.5px}
 .flow-amount{text-align:right;font:600 13px var(--display);font-variant-numeric:tabular-nums}
@@ -362,7 +381,7 @@ button{font-family:inherit}
 
 /* buttons, fields */
 .btn{height:46px;padding:0 20px;border-radius:15px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--fg);font:600 14.5px var(--body);cursor:pointer}
-.btn.primary{background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);border-color:transparent;box-shadow:0 8px 22px rgba(79,227,230,.28)}
+.btn.primary{background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 8px 18px rgba(2,18,30,.5)}
 .btn.sm{height:42px;padding:0 16px}
 .btn.warnb{border-color:rgba(255,200,87,.5);color:var(--warn)}
 .field{width:100%;height:46px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--fg);padding:0 14px;font:500 15px var(--body)}
@@ -375,8 +394,7 @@ select.field option{background:#0f1633;color:var(--fg)}
 .nav{position:absolute;z-index:20;left:14px;right:14px;bottom:14px;height:70px;border-radius:32px;display:grid;grid-template-columns:repeat(7,1fr);align-items:center;padding:0 6px;background:linear-gradient(160deg,rgba(44,66,110,.6),rgba(18,26,58,.78))}
 .nav button{background:none;border:0;color:var(--faint);font:500 9px var(--body);display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;cursor:pointer;min-width:0;white-space:nowrap}
 .nav button[aria-current="page"]{color:var(--accent)}
-.nav button[aria-current="page"] .ic{filter:drop-shadow(0 0 8px rgba(79,227,230,.7))}
-.nav .fab{width:50px;height:50px;border-radius:50%;margin:-25px auto 0;padding:0;justify-content:center;background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);box-shadow:0 10px 26px rgba(79,227,230,.4),inset 0 1px 0 rgba(255,255,255,.55)}
+.nav .fab{width:50px;height:50px;border-radius:50%;margin:-25px auto 0;padding:0;justify-content:center;background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);box-shadow:0 10px 22px rgba(2,18,30,.6),inset 0 1px 0 rgba(255,255,255,.55)}
 
 /* sheet */
 .sheet-wrap{position:absolute;inset:0;z-index:40;display:flex;align-items:flex-end}
@@ -412,8 +430,56 @@ select.field option{background:#0f1633;color:var(--fg)}
 /* toast */
 .toast{position:absolute;z-index:60;left:16px;right:16px;bottom:100px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(18,28,62,.94);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,12,.5);font-size:13px}
 .toast button{background:none;border:0;color:var(--accent);font:700 13px var(--body);cursor:pointer;padding:4px 2px;flex:none}
+
+/* press, hover and disabled feedback */
+button,.chip,.pill{-webkit-tap-highlight-color:transparent}
+.btn,.pill,.chip,.x,.eye,.del,.linkbtn,.month button,.seg button,.kseg button,.nav button,.dmai-act,.brow-main,.pay-copy,.pro-banner button,.toast button{transition:transform .15s cubic-bezier(.2,.8,.3,1),background .2s,color .2s,border-color .2s,box-shadow .2s,opacity .2s}
+.btn:active,.pill:active,.chip:active,.dmai-act:active{transform:scale(.97)}
+.x:active,.eye:active,.del:active,.month button:active,.nav button:active{transform:scale(.92)}
+.nav .fab:active{transform:scale(.94)}
+.brow-main:active{background:rgba(255,255,255,.05)}
+.linkbtn:active,.pay-copy:active,.toast button:active,.pro-banner button:active{opacity:.6}
+.pill.info:active{transform:none}
+.btn:disabled{opacity:.5;cursor:default;transform:none}
+@media (hover:hover){
+  .btn:hover{background:rgba(255,255,255,.12)}
+  .btn.primary:hover{background:linear-gradient(145deg,#97F7F8,#3CC6E4)}
+  .x:hover,.eye:hover,.month button:not(:disabled):hover{background:rgba(255,255,255,.12);color:var(--fg)}
+  .chip:hover,.nav button:hover,.seg button:not([aria-pressed="true"]):hover,.kseg button:not([aria-pressed="true"]):hover{color:var(--fg)}
+  .nav button[aria-current="page"]:hover{color:var(--accent)}
+  .nav .fab:hover{color:var(--accent-ink);background:linear-gradient(145deg,#97F7F8,#3CC6E4)}
+  .dmai-act:hover{background:rgba(255,255,255,.09);border-color:rgba(79,227,230,.35)}
+  .linkbtn:hover,.pay-copy:hover,.toast button:hover{text-decoration:underline;text-underline-offset:3px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+/* phones: header with the logo stays in view, no zoom on focus, logo never squeezed */
+html{-webkit-text-size-adjust:100%}
+a,button,input,select{touch-action:manipulation}
+.brand .logo{flex:none;width:34px;height:34px;max-width:none}
+.top{position:sticky;top:-8px;z-index:5;margin:-20px -16px 0;padding:20px 16px 10px;background:linear-gradient(180deg,rgba(13,50,72,.96) 60%,rgba(13,50,72,.82));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft)}
+.field,select.field{font-size:16px}
+.field.big{font-size:17px}
+@media (max-width:520px){
+  .dmai{--bot:120px;width:80px;height:102px}
+  .dmai-tip{right:90px;bottom:146px}
+}
+@media (max-width:380px){
+  .bal{font-size:22px;gap:5px}
+  .bal .cur{font-size:13px}
+  .eye{width:28px;height:28px}
+  .io>div{padding:9px;gap:7px}
+  .io .ico{width:26px;height:26px}
+  .io b{font-size:12.5px}
+  .hello,.ttl{font-size:24px}
+}
+.top .btn{white-space:nowrap;flex:none}
+@media (max-width:340px){
+  .top .btn{height:38px;padding:0 12px;font-size:13px}
+  .wm{font-size:15px}
+}
 </style>
+</head>
+<body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7CF3F5"/><stop offset="1" stop-color="#2FB8D6"/></linearGradient>
@@ -983,7 +1049,6 @@ function moneyFlowHTML(st){
   var keys=Object.keys(st.byCat).filter(function(k){return st.byCat[k]>0;}).sort(function(a,b){return st.byCat[b]-st.byCat[a];});
   var total=st.exp,hasActivity=st.inc>0||total>0;
   var colors={makan:'#FFB86B',tagihan:'#7C8CFF',transport:'#6CB6FF',hiburan:'#FF8FB1',belanja:'#E39BFF',kesehatan:'#5FE3B4',pendidikan:'#F5D76E',lain:'#9FB0C8',lain_in:'#9FB0C8'};
-  var emojis={makan:'🍔',tagihan:'🏠',transport:'🚗',hiburan:'🎮',belanja:'🛒',kesehatan:'🩺',pendidikan:'📚',lain:'✨'};
   var fmt=function(value){return S.hide?'••••••':rpw(value);};
   var leftover=st.net,positive=leftover>=0,top=keys.slice(0,2),topAmount=top.reduce(function(sum,k){return sum+st.byCat[k];},0);
   var insight=total>0&&top.length
@@ -991,7 +1056,7 @@ function moneyFlowHTML(st){
     :'<div class="flow-insight">'+(hasActivity?'Belum ada pengeluaran tercatat bulan ini.':'Catat pemasukan dan pengeluaran untuk melihat ke mana uangmu pergi.')+'</div>';
   var rows=keys.map(function(k){
     var category=CAT[k]||CAT.lain,value=st.byCat[k],share=total>0?value/total*100:0,color=colors[k]||category.c||'#9FB0C8';
-    return '<div class="flow-row" style="--c:'+color+'"><div class="flow-label"><span class="flow-emoji" aria-hidden="true">'+(emojis[k]||'🧾')+'</span><span><b>'+esc(category.n)+'</b><small>'+share.toLocaleString('id-ID',{maximumFractionDigits:1})+'% dari pengeluaran</small></span></div><b class="flow-amount">'+fmt(value)+'</b><div class="flow-bar" aria-hidden="true"><i style="--w:'+Math.max(2,share)+'%"></i></div></div>';
+    return '<div class="flow-row" style="--c:'+color+'"><div class="flow-label"><span class="flow-ic">'+ic(ICONS[category.i]?category.i:'dots',18)+'</span><span><b>'+esc(category.n)+'</b><small>'+share.toLocaleString('id-ID',{maximumFractionDigits:1})+'% dari pengeluaran</small></span></div><b class="flow-amount">'+fmt(value)+'</b><div class="flow-bar" aria-hidden="true"><i style="--w:'+Math.max(2,share)+'%"></i></div></div>';
   }).join('');
   return '<section class="panel glass money-flow" aria-labelledby="h-flow"><div class="panel-h"><h2 id="h-flow">Ke mana uang saya?</h2><span class="aside">'+ymShort(S.ym)+' · Semua nominal dalam Rupiah</span></div>'+
     '<div class="flow-total"><div><span>Total pemasukan</span><b>'+(S.hide?'••••••':rpw(st.inc))+'</b></div><div class="flow-out"><span>Total pengeluaran</span><b>'+(S.hide?'••••••':rpw(total))+'</b></div></div>'+
@@ -1180,7 +1245,7 @@ function chartHTML(sel){
 }
 
 /* ---------- view pieces ---------- */
-function logo(){return '<img src="/logo.png" width="34" height="34" alt="" aria-hidden="true" style="object-fit:cover;border-radius:11px">';}
+function logo(){return '<img class="logo" src="/icons/icon-192.png" width="34" height="34" alt="">';}
 function proDate(value){return value?new Date(value).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';}
 var PRO_TABS={
  diagnose:{i:'pulse',c:'#6EE7A0',h:'Tahu persis ke mana uang Anda pergi',p:'Diagnose membaca transaksi Anda, menunjukkan pos yang paling menguras dompet, dan menghitung berapa yang bisa Anda hemat mulai bulan ini.',l:['Skor kesehatan keuangan 0–100 lengkap dengan penyebabnya','Temuan otomatis dari pola pemasukan dan pengeluaran Anda','Simulasi hemat: geser persentasenya, lihat langsung hasilnya']},
@@ -1208,7 +1273,7 @@ function proBanner(){
 }
 function accountName(){return apiReady||offlineMode?S.name:(profile&&profile.name)||S.name;}
 function avatarInner(src){if(src===undefined)src=profile&&profile.avatar;return src?'<img src="'+esc(src)+'" alt="">':esc((accountName()||'S').charAt(0).toUpperCase());}
-function topbar(){return '<header class="top"><a class="brand" href="/" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor <b>Money</b></span></a>'+(apiToken?'<button type="button" class="avatar" data-act="account" aria-label="Pengaturan akun">'+avatarInner()+'</button>':'<button type="button" class="btn primary sm" data-act="authLogin">Masuk / Daftar</button>')+'</header>'+proBanner();}
+function topbar(){return '<header class="top"><a class="brand" href="/" aria-label="Doctor Money, ke halaman utama">'+logo()+'<span class="wm">Doctor<b>Money</b></span></a>'+(apiToken?'<button type="button" class="avatar" data-act="account" aria-label="Pengaturan akun">'+avatarInner()+'</button>':'<button type="button" class="btn primary sm" data-act="authLogin">Masuk / Daftar</button>')+'</header>'+proBanner();}
 function monthSw(){
   var isC=S.ym===curYM(),minYM=shiftYM(curYM(),-12);
   return '<div class="month"><button type="button" data-act="mprev" aria-label="Bulan sebelumnya"'+(S.ym<=minYM?' disabled':'')+'>'+ic('left',18)+'</button><span>'+ymLabel(S.ym)+'</span><button type="button" data-act="mnext" aria-label="Bulan berikutnya"'+(isC?' disabled':'')+'>'+ic('right',18)+'</button></div>';
@@ -1424,6 +1489,7 @@ function initNav(){
 }
 function render(keep){
   var sc=$('#screen'),y=keep===false?0:sc.scrollTop;
+  $('#view').classList.toggle('enter',keep===false);
   if(!apiToken&&showAuth){
     $('.nav').hidden=true;$('#fab').hidden=true;$('#dmai').hidden=true;
     $('#view').innerHTML=authHTML()+'<button type="button" class="linkbtn" data-act="continueGuest">Lanjutkan tanpa masuk</button>';

@@ -1,7 +1,7 @@
 /* Doctor Money service worker: always tries the network first so a new deploy shows up at once,
    and falls back to the last saved copy when the device is offline. API calls go to another origin and are not touched. */
 var CACHE = 'doctor-money-v1';
-var SHELL = ['/dashboard', '/logo.png', '/dr-robot.png', '/icons/icon-192.png'];
+var SHELL = ['/dashboard', '/dr-robot.png', '/icons/icon-192.png'];
 
 self.addEventListener('install', function (event) {
   event.waitUntil(caches.open(CACHE).then(function (cache) { return cache.addAll(SHELL); }).catch(function () {}));

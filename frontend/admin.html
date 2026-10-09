@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Admin Doctor Money</title>
-<link rel="icon" type="image/png" href="/logo.png">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme:dark;
-  --page:#050716; --sky:#0D3248; --mid:#0A1232; --deep:#170C3A;
+  --page:#050716; --sky:#0D3248; --mid:#0A1232; --deep:#0B1B40;
   --fg:#EAF2FF; --muted:#A3B3CC; --faint:#71829E;
   --accent:#4FE3E6; --accent-ink:#04222A;
   --good:#6EE7A0; --warn:#FFC857; --bad:#FF7A8A;
@@ -21,39 +21,51 @@
   --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+button,input{touch-action:manipulation}
 [hidden]{display:none!important}
-body{margin:0;min-height:100vh;background:linear-gradient(180deg,var(--sky) 0%,var(--mid) 46%,var(--deep) 100%) fixed;color:var(--fg);font:400 14px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100vh;min-height:100dvh;background:linear-gradient(180deg,var(--sky) 0%,var(--mid) 46%,var(--deep) 100%) fixed;color:var(--fg);font:400 14px/1.45 var(--body);-webkit-font-smoothing:antialiased}
 button,input{font-family:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:860px;margin:0 auto;padding:20px 16px 80px;display:flex;flex-direction:column;gap:16px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;font:600 18px var(--display)}
-.brand img{width:34px;height:34px;border-radius:11px;object-fit:cover}
+.brand img{flex:none;width:34px;height:34px;border-radius:11px;object-fit:cover}
 .brand b{color:var(--accent);font-weight:600}
 .glass{background:linear-gradient(160deg,rgba(255,255,255,.105),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 12px 32px rgba(0,0,12,.28)}
 .panel{padding:16px;display:flex;flex-direction:column;gap:12px}
 .panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
-h1{margin:0;font:600 24px/1.2 var(--display)}
+h1{margin:0;font:600 24px/1.2 var(--display);letter-spacing:-.01em}
 h2{margin:0;font:600 16px var(--display)}
 .aside{margin:0;font-size:12.5px;color:var(--muted)}
-.field{width:100%;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--fg);font-size:15px}
+.field{width:100%;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--fg);font-size:16px}
 .field::placeholder{color:var(--faint)}
-.btn{height:40px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--fg);font:600 13.5px var(--body);cursor:pointer;white-space:nowrap}
+.field:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.btn{height:40px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--fg);font:600 13.5px var(--body);cursor:pointer;white-space:nowrap;transition:transform .15s cubic-bezier(.2,.8,.3,1),background .2s,opacity .2s}
 .btn:hover{background:rgba(255,255,255,.12)}
+.btn.primary:hover{background:linear-gradient(145deg,#97F7F8,#3CC6E4)}
+.btn.danger:hover{background:rgba(255,122,138,.12)}
+.btn:active{transform:scale(.97)}
 .btn.primary{background:linear-gradient(145deg,#7CF3F5,#2FB8D6);color:var(--accent-ink);border-color:transparent}
 .btn.danger{color:var(--bad);border-color:rgba(255,122,138,.4)}
 .btn.armed{background:rgba(255,122,138,.2)}
-.btn:disabled{opacity:.5;cursor:default}
+.btn:disabled{opacity:.5;cursor:default;transform:none}
 .rows{display:flex;flex-direction:column;gap:10px}
-.row{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.row{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;transition:background .2s}
+.row:hover{background:rgba(255,255,255,.07)}
 .who{min-width:0;flex:1 1 220px}
 .who b{display:block;font:600 14.5px var(--body);overflow-wrap:anywhere}
+.who span,.aside{font-variant-numeric:tabular-nums}
 .who span{display:block;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .acts{display:flex;gap:6px;flex-wrap:wrap}
 .who .tag{display:inline-block;margin-top:5px;padding:3px 9px;border-radius:999px;font:600 11.5px var(--body);border:1px solid var(--line);color:var(--muted)}
 .who .tag.pro{color:var(--accent-ink);background:var(--accent);border-color:transparent}
 .who .tag.trial{color:var(--warn);border-color:rgba(255,200,87,.45)}
 .empty{padding:16px 8px;text-align:center;color:var(--muted)}
+.skel{height:64px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 70%) 0 0/300% 100%;animation:skel 1.4s linear infinite}
+.skel:nth-child(2){opacity:.6}
+@keyframes skel{to{background-position:-150% 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .err{margin:0;color:var(--bad);font-size:13px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:12px 16px;border-radius:14px;background:rgba(18,28,62,.96);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,12,.5);font-weight:600}
 .login{max-width:420px;margin:12vh auto 0}
@@ -62,7 +74,7 @@ h2{margin:0;font:600 16px var(--display)}
 <body>
 <div class="wrap">
   <header class="top">
-    <span class="brand"><img src="/logo.png" alt="">Doctor <b>Money</b> Admin</span>
+    <span class="brand"><img src="/icons/icon-192.png" width="34" height="34" alt=""><span>Doctor<b>Money</b> Admin</span></span>
     <button type="button" class="btn" id="logout" hidden>Keluar</button>
   </header>
 
@@ -78,13 +90,13 @@ h2{margin:0;font:600 16px var(--display)}
     <div class="wrap" style="padding:0">
       <section class="glass panel" aria-labelledby="h-pending">
         <div class="panel-h"><h2 id="h-pending">Menunggu persetujuan</h2><button type="button" class="btn" id="refresh">Muat ulang</button></div>
-        <div class="rows" id="pending"></div>
+        <div class="rows" id="pending" aria-busy="true"><div class="skel"></div></div>
       </section>
       <section class="glass panel" aria-labelledby="h-users">
         <div class="panel-h"><h2 id="h-users">Pengguna</h2><span class="aside" id="total"></span></div>
         <input class="field" id="q" type="search" placeholder="Cari email, nomor WhatsApp, ID akun, atau ID Telegram" aria-label="Cari pengguna">
         <p class="aside">Satu klik pada tombol paket langsung memberi Pro. Jika akun masih punya masa aktif, durasinya ditambahkan di belakangnya.</p>
-        <div class="rows" id="users"></div>
+        <div class="rows" id="users" aria-busy="true"><div class="skel"></div><div class="skel"></div></div>
       </section>
     </div>
   </main>
@@ -131,7 +143,7 @@ function userRow(u){
     PLANS.map(function(p){return '<button type="button" class="btn primary" data-grant="'+p[0]+'" data-id="'+u.id+'">'+p[1]+'</button>';}).join('')+
     (u.tier==='free'?'':'<button type="button" class="btn danger'+(armed===u.id?' armed':'')+'" data-revoke="'+u.id+'">'+(armed===u.id?'Yakin cabut?':'Cabut')+'</button>')+'</div></div>';
 }
-function renderUsers(){$('users').innerHTML=users.length?users.map(userRow).join(''):'<div class="empty">Tidak ada akun yang cocok.</div>';}
+function renderUsers(){$('users').removeAttribute('aria-busy');$('users').innerHTML=users.length?users.map(userRow).join(''):'<div class="empty">Tidak ada akun yang cocok.</div>';}
 function loadUsers(){
   return api('/api/admin/accounts?q='+encodeURIComponent($('q').value.trim())).then(function(body){
     users=body.accounts;$('total').textContent=body.total+' akun terdaftar'+(users.length===50?' · menampilkan 50 terbaru':'');renderUsers();
@@ -144,7 +156,7 @@ function loadPending(){
     }).concat(result[1].payments.map(function(p){
       return '<div class="row"><div class="who"><b>'+esc(p.email||'Telegram '+p.telegram_id)+'</b><span>'+esc(p.plan?p.plan.name:'Paket tidak dikenal')+' · transfer '+rp(p.amount)+' · bukti '+date(p.proof_at)+'</span><span class="tag">Dari bot Telegram</span></div><div class="acts"><button type="button" class="btn primary" data-pay="approve" data-id="'+p.id+'">Setujui</button><button type="button" class="btn danger" data-pay="reject" data-id="'+p.id+'">Tolak</button></div></div>';
     }));
-    $('pending').innerHTML=rows.length?rows.join(''):'<div class="empty">Tidak ada pembayaran yang menunggu.</div>';
+    $('pending').removeAttribute('aria-busy');$('pending').innerHTML=rows.length?rows.join(''):'<div class="empty">Tidak ada pembayaran yang menunggu.</div>';
   });
 }
 function start(){
